@@ -3,35 +3,35 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Face Landmarker</title>
+  <title>Face Tracker & 3D Viewer - Fase 2</title>
   <link href="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.css" rel="stylesheet">
   <link rel="stylesheet" href="./src/style.css">
 </head>
 <body>
-  <h1>Face landmark detection (MediaPipe)</h1>
-
-  <section id="demos" class="invisible">
-    <h2>Detección en Tiempo Real</h2>
-    <p>Haz clic en el botón para habilitar la cámara.</p>
-
-    <div style="display: flex; gap: 20px;">
-      <div id="liveView" class="videoView">
-        <button id="webcamButton" class="mdc-button mdc-button--raised">
-          <span class="mdc-button__ripple"></span>
-          <span class="mdc-button__label" id="webcamLabel">HABILITAR CÁMARA</span>
-        </button>
-        <div style="position: relative; margin-top: 10px;">
-          <video id="webcam" autoplay playsinline></video>
-          <canvas class="output_canvas" id="output_canvas"></canvas>
-        </div>
+  <div class="app-container">
+    
+    <div class="left-panel" id="three-container">
       </div>
 
-      <div class="blend-shapes">
-        <h3>Blendshapes (ARKit)</h3>
+    <div class="right-panel">
+      <h2>Detección en Tiempo Real</h2>
+      <button id="webcamButton" class="mdc-button mdc-button--raised">
+        <span class="mdc-button__ripple"></span>
+        <span class="mdc-button__label" id="webcamLabel">HABILITAR CÁMARA</span>
+      </button>
+
+      <div class="video-section">
+        <video id="webcam" autoplay playsinline></video>
+        <canvas class="output_canvas" id="output_canvas"></canvas>
+      </div>
+
+      <div class="data-section">
+        <h3>Valores ARKit</h3>
         <ul class="blend-shapes-list" id="video-blend-shapes"></ul>
       </div>
     </div>
-  </section>
+
+  </div>
 
   <script type="module" src="./src/main.js"></script>
 </body>

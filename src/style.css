@@ -1,24 +1,52 @@
 body {
+  margin: 0;
   font-family: helvetica, arial, sans-serif;
-  margin: 2em;
-  color: #3d3d3d;
-  background-color: #f8f9fa;
+  background-color: #1e1e1e; /* Modo oscuro general */
+  color: #ffffff;
+  height: 100vh;
+  overflow: hidden;
 }
 
-h1 { color: #007f8b; }
-.invisible { opacity: 0; pointer-events: none; }
-section { transition: opacity 500ms ease-in-out; }
+.app-container {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+}
 
-.videoView {
-  width: 50%;
+/* PANEL IZQUIERDO (Three.js) */
+.left-panel {
+  flex: 1; /* Ocupa el 50% */
+  background-color: #2a2a2a;
   position: relative;
+}
+
+/* PANEL DERECHO (Cámara y Datos) */
+.right-panel {
+  flex: 1; /* Ocupa el 50% */
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  box-sizing: border-box;
+  background-color: #121212;
+  border-left: 2px solid #333;
+}
+
+h2, h3 { color: #00bcd4; margin-top: 0; }
+
+.video-section {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  margin: 15px 0;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: #000;
 }
 
 video {
   display: block;
-  transform: rotateY(180deg);
   width: 100%;
-  border-radius: 8px;
+  transform: rotateY(180deg);
 }
 
 .output_canvas {
@@ -29,41 +57,40 @@ video {
   pointer-events: none;
 }
 
-.blend-shapes {
-  width: 45%;
-  height: 500px;
+.data-section {
+  flex: 1;
   overflow-y: auto;
-  background: white;
-  padding: 10px;
+  background: #1e1e1e;
+  padding: 15px;
   border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  border: 1px solid #333;
 }
 
-.blend-shapes-list {
-  list-style: none;
-  padding: 0;
-}
+.blend-shapes-list { padding: 0; list-style: none; margin: 0; }
 
 .blend-shapes-item {
   display: flex;
   align-items: center;
-  height: 20px;
-  margin-bottom: 5px;
+  height: 24px;
+  margin-bottom: 6px;
 }
 
 .blend-shapes-label {
-  display: flex;
-  width: 120px;
-  justify-content: flex-end;
-  margin-right: 10px;
-  font-size: 12px;
+  width: 140px;
+  font-size: 13px;
+  text-align: right;
+  margin-right: 15px;
+  color: #aaa;
 }
 
 .blend-shapes-value {
-  height: 16px;
-  background-color: #007f8b;
-  color: white;
-  font-size: 10px;
+  height: 100%;
+  background-color: #00bcd4;
+  color: #000;
+  font-size: 11px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
   padding-left: 5px;
   border-radius: 4px;
 }

@@ -1,3 +1,7 @@
+// 1. IMPORTACIONES DE THREE.JS Y MEDIAPIPE
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { FaceLandmarker, FilesetResolver, DrawingUtils } from "@mediapipe/tasks-vision";
 
 const demosSection = document.getElementById("demos");
@@ -126,3 +130,62 @@ function drawBlendShapes(el, blendShapes) {
   });
   el.innerHTML = htmlMaker;
 }
+
+// ==========================================
+// CONFIGURACIÓN DEL VISOR 3D (THREE.JS)
+// ==========================================
+const threeContainer = document.getElementById('three-container');
+let scene, camera, renderer, avatarModel;
+
+function initThreeJS() {
+  // 1. Crear la Escena y la Cámara
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x2a2a2a); // Fondo gris oscuro
+
+  camera = new THREE.PerspectiveCamera(45, threeContainer.clientWidth / threeContainer.clientHeight, 0.1, 100);
+  camera.position.set(0, 1.5, 3); // Posicionar la cámara frente a la cara
+
+  // 2. Crear el Renderizador
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(threeContainer.clientWidth, threeContainer.clientHeight);
+  threeContainer.appendChild(renderer.domElement);
+
+  // 3. Añadir Luces (para que el modelo no se vea negro)
+  const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
+  scene.add(ambientLight);
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 2);
+  directionalLight.position.set(0, 2, 2);
+  scene.add(directionalLight);
+
+  // 4. Controles para rotar con el ratón (como en glTF Viewer)
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.target.set(0, 1.5, 0); // Apuntar a la altura de la cabeza
+  controls.update();
+
+  // 5. Cargar el archivo .glb
+  const loader = new GLTFLoader();
+  // Asegúrate de que tu archivo se llame avatar.glb y esté en la carpeta /public
+  loader.load('/avatar.glb', (gltf) => {
+    avatarModel = gltf.scene;
+    scene.add(avatarModel);
+    console.log("¡Modelo 3D cargado exitosamente!");
+  }, undefined, (error) => {
+    console.error("Error al cargar el modelo 3D:", error);
+  });
+
+  // 6. Bucle de renderizado 3D
+  function animate3D() {
+    requestAnimationFrame(animate3D);
+    renderer.render(scene, camera);
+  }
+  animate3D();
+
+  // 7. Ajustar tamaño si cambias la ventana
+  window.addEventListener('resize', () => {
+    camera.aspect = threeContainer.clientWidth / threeContainer.clientHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(threeContainer.clientWidth, threeContainer.clientHeight);
+  });
+}
+
+initThreeJS();
