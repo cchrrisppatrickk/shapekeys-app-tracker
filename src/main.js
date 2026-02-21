@@ -101,16 +101,9 @@ async function predictWebcam() {
     }
   }
 
-  // Pintar las barras de Blendshapes en el panel lateral
+  // Pintar las barras de Blendshapes en el panel lateral y aplicarlas
   if (results && results.faceBlendshapes) {
     drawBlendShapes(videoBlendShapes, results.faceBlendshapes);
-  }
-
-  // Pintar las barras de Blendshapes en el panel lateral
-  if (results && results.faceBlendshapes) {
-    drawBlendShapes(videoBlendShapes, results.faceBlendshapes);
-    
-    // AGREGAR ESTA LÍNEA PARA MOVER EL 3D:
     applyBlendshapesToModel(results.faceBlendshapes);
   }
   
@@ -170,12 +163,30 @@ function initThreeJS() {
   controls.target.set(0, 1.5, 0); // Apuntar a la altura de la cabeza
   controls.update();
 
-  // 5. Cargar el archivo .glb
+  // 5. Cargar el archivo .glb y ESCANEAR HUESOS
   const loader = new GLTFLoader();
-  // Asegúrate de que tu archivo se llame avatar.glb y esté en la carpeta /public
   loader.load('/avatar.glb', (gltf) => {
     avatarModel = gltf.scene;
     scene.add(avatarModel);
+    
+    console.log("--- INICIANDO ESCÁNER DE HUESOS ---");
+    let hasBones = false;
+    
+    // Recorremos la jerarquía del modelo recién cargado
+    avatarModel.traverse((node) => {
+      // Verificamos si el nodo actual es un hueso
+      if (node.isBone) {
+        hasBones = true;
+        console.log("🦴 Hueso encontrado:", node.name);
+      }
+    });
+    
+    if (!hasBones) {
+      console.warn("❌ ALERTA: Tu archivo .glb no contiene NINGÚN hueso (isBone = false). ¡Solo se exportó la malla!");
+    } else {
+      console.log("--- ESCÁNER FINALIZADO ---");
+    }
+
     console.log("¡Modelo 3D cargado exitosamente!");
   }, undefined, (error) => {
     console.error("Error al cargar el modelo 3D:", error);
