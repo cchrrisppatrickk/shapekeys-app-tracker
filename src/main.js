@@ -18,6 +18,10 @@ let lastVideoTime = -1;
 let results = undefined;
 const drawingUtils = new DrawingUtils(canvasCtx);
 
+// VARIABLES PARA EL HUESO DE LA CABEZA
+let headBone = null;
+let neckBone = null; // Opcional, para rotación más natural
+
 // 1. Inicializar el modelo
 async function createFaceLandmarker() {
   const filesetResolver = await FilesetResolver.forVisionTasks(
@@ -29,11 +33,12 @@ async function createFaceLandmarker() {
       delegate: "GPU"
     },
     outputFaceBlendshapes: true,
+    outputFacialTransformationMatrixes: true, // ¡CRUCIAL PARA LA ROTACIÓN!
     runningMode: "VIDEO",
     numFaces: 1
   });
   
-  demosSection.classList.remove("invisible");
+  if(demosSection) demosSection.classList.remove("invisible");
 }
 createFaceLandmarker();
 
@@ -57,7 +62,7 @@ function enableCam() {
   if (webcamRunning === true) {
     webcamRunning = false;
     webcamLabel.innerText = "HABILITAR CÁMARA";
-    video.srcObject.getTracks().forEach(track => track.stop()); // Detiene la cámara
+    video.srcObject.getTracks().forEach(track => track.stop());
   } else {
     webcamRunning = true;
     webcamLabel.innerText = "DESHABILITAR CÁMARA";
@@ -72,7 +77,6 @@ function enableCam() {
 
 // 3. Bucle de predicción y dibujo
 async function predictWebcam() {
-  // Ajustar tamaño del canvas al video
   canvasElement.style.width = video.clientWidth + "px";
   canvasElement.style.height = video.clientHeight + "px";
   canvasElement.width = video.videoWidth;
@@ -86,7 +90,7 @@ async function predictWebcam() {
 
   canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
 
-  // Dibujar la malla oficial de MediaPipe
+  // Dibujar malla de MediaPipe
   if (results && results.faceLandmarks) {
     for (const landmarks of results.faceLandmarks) {
       drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_TESSELATION, { color: "#C0C0C070", lineWidth: 1 });
@@ -96,15 +100,20 @@ async function predictWebcam() {
       drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_LEFT_EYEBROW, { color: "#30FF30" });
       drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_FACE_OVAL, { color: "#E0E0E0" });
       drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_LIPS, { color: "#E0E0E0" });
-      drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_RIGHT_IRIS, { color: "#FF3030" });
-      drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_LEFT_IRIS, { color: "#30FF30" });
     }
   }
 
-  // Pintar las barras de Blendshapes en el panel lateral y aplicarlas
-  if (results && results.faceBlendshapes) {
-    drawBlendShapes(videoBlendShapes, results.faceBlendshapes);
-    applyBlendshapesToModel(results.faceBlendshapes);
+  // Actualizar UI y Modelo 3D (Expresiones y Rotación)
+  if (results) {
+    if (results.faceBlendshapes && results.faceBlendshapes.length > 0) {
+      drawBlendShapes(videoBlendShapes, results.faceBlendshapes);
+      applyBlendshapesToModel(results.faceBlendshapes);
+    }
+    
+    // APLICAR ROTACIÓN AL HUESO
+    if (results.facialTransformationMatrixes && results.facialTransformationMatrixes.length > 0) {
+      applyHeadPoseToModel(results.facialTransformationMatrixes[0].data);
+    }
   }
   
   if (webcamRunning === true) {
@@ -112,13 +121,12 @@ async function predictWebcam() {
   }
 }
 
-// 4. Función para crear el HTML de las barras de valores
+// 4. UI de Blendshapes
 function drawBlendShapes(el, blendShapes) {
-  if (!blendShapes.length) return;
+  if (!blendShapes || !blendShapes.length) return;
   
   let htmlMaker = "";
   blendShapes[0].categories.map((shape) => {
-    // MediaPipe devuelve un 'score' de 0 a 1. Lo pasamos a porcentaje para el ancho.
     const score = parseFloat(shape.score);
     htmlMaker += `
       <li class="blend-shapes-item">
@@ -129,7 +137,7 @@ function drawBlendShapes(el, blendShapes) {
       </li>
     `;
   });
-  el.innerHTML = htmlMaker;
+  if(el) el.innerHTML = htmlMaker;
 }
 
 // ==========================================
@@ -139,67 +147,53 @@ const threeContainer = document.getElementById('three-container');
 let scene, camera, renderer, avatarModel;
 
 function initThreeJS() {
-  // 1. Crear la Escena y la Cámara
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x2a2a2a); // Fondo gris oscuro
+  scene.background = new THREE.Color(0x2a2a2a);
 
   camera = new THREE.PerspectiveCamera(45, threeContainer.clientWidth / threeContainer.clientHeight, 0.1, 100);
-  camera.position.set(0, 1.5, 3); // Posicionar la cámara frente a la cara
+  camera.position.set(0, 1.5, 3);
 
-  // 2. Crear el Renderizador
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(threeContainer.clientWidth, threeContainer.clientHeight);
   threeContainer.appendChild(renderer.domElement);
 
-  // 3. Añadir Luces (para que el modelo no se vea negro)
   const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
   scene.add(ambientLight);
   const directionalLight = new THREE.DirectionalLight(0xffffff, 2);
   directionalLight.position.set(0, 2, 2);
   scene.add(directionalLight);
 
-  // 4. Controles para rotar con el ratón (como en glTF Viewer)
   const controls = new OrbitControls(camera, renderer.domElement);
-  controls.target.set(0, 1.5, 0); // Apuntar a la altura de la cabeza
+  controls.target.set(0, 1.5, 0);
   controls.update();
 
-  // 5. Cargar el archivo .glb y ESCANEAR HUESOS
   const loader = new GLTFLoader();
   loader.load('/avatar.glb', (gltf) => {
     avatarModel = gltf.scene;
     scene.add(avatarModel);
-    
-    console.log("--- INICIANDO ESCÁNER DE HUESOS ---");
-    let hasBones = false;
-    
-    // Recorremos la jerarquía del modelo recién cargado
-    avatarModel.traverse((node) => {
-      // Verificamos si el nodo actual es un hueso
-      if (node.isBone) {
-        hasBones = true;
-        console.log("🦴 Hueso encontrado:", node.name);
-      }
-    });
-    
-    if (!hasBones) {
-      console.warn("❌ ALERTA: Tu archivo .glb no contiene NINGÚN hueso (isBone = false). ¡Solo se exportó la malla!");
+    console.log("¡Modelo 3D cargado exitosamente!");
+
+    // BUSCAR LOS HUESOS DE AUTO-RIG PRO
+    // Usamos 'headx' como base. Si no funciona, prueba 'c_headx'
+    headBone = avatarModel.getObjectByName("headx"); 
+    neckBone = avatarModel.getObjectByName("neckx"); // Opcional
+
+    if(headBone) {
+      console.log("Hueso de la cabeza encontrado y vinculado:", headBone.name);
     } else {
-      console.log("--- ESCÁNER FINALIZADO ---");
+      console.error("NO se encontró el hueso 'headx'. Verifica los nombres en Blender.");
     }
 
-    console.log("¡Modelo 3D cargado exitosamente!");
   }, undefined, (error) => {
     console.error("Error al cargar el modelo 3D:", error);
   });
 
-  // 6. Bucle de renderizado 3D
   function animate3D() {
     requestAnimationFrame(animate3D);
     renderer.render(scene, camera);
   }
   animate3D();
 
-  // 7. Ajustar tamaño si cambias la ventana
   window.addEventListener('resize', () => {
     camera.aspect = threeContainer.clientWidth / threeContainer.clientHeight;
     camera.updateProjectionMatrix();
@@ -207,11 +201,11 @@ function initThreeJS() {
   });
 }
 
-// DICCIONARIO DE TRADUCCIÓN: MediaPipe (ARKit) -> Tu Modelo 3D
+// DICCIONARIO DE TRADUCCIÓN: MediaPipe -> Auto-Rig Pro
 const blendshapeMap = {
   eyeBlinkLeft: "Eye_Blink_L",
   eyeLookDownLeft: "Eye_L_Look_Down",
-  eyeLookInLeft: "Eye_L_Look_R", // Mirar hacia adentro es hacia la derecha para el ojo izquierdo
+  eyeLookInLeft: "Eye_L_Look_R",
   eyeLookOutLeft: "Eye_L_Look_L",
   eyeLookUpLeft: "Eye_L_Look_Up",
   eyeSquintLeft: "Eye_Squint_L",
@@ -252,7 +246,7 @@ const blendshapeMap = {
   mouthUpperUpRight: "Mouth_Up_Upper_R",
   browDownLeft: "Brow_Drop_L",
   browDownRight: "Brow_Drop_R",
-  browInnerUp: "Brow_Raise_Inner_L", // Tu modelo agrupa el ceño interno aquí
+  browInnerUp: "Brow_Raise_Inner_L", 
   browOuterUpLeft: "Brow_Raise_Outer_L",
   browOuterUpRight: "Brow_Raise_Outer_R",
   cheekPuff: "Cheek_Puff_L",
@@ -263,30 +257,66 @@ const blendshapeMap = {
 };
 
 function applyBlendshapesToModel(mediaPipeBlendshapes) {
-  // Si el modelo 3D aún no carga o no hay resultados, no hacemos nada
   if (!avatarModel || !mediaPipeBlendshapes || mediaPipeBlendshapes.length === 0) return;
 
-  const shapes = mediaPipeBlendshapes[0].categories; // El array con los 52 valores
+  const shapes = mediaPipeBlendshapes[0].categories;
 
-  // 1. Recorremos los 52 valores de MediaPipe
   shapes.forEach((shape) => {
     const mediaPipeName = shape.categoryName; 
     const score = shape.score;
-    
-    // 2. Buscamos cómo se llama en tu modelo
     const modelName = blendshapeMap[mediaPipeName];
 
-    // 3. Si existe una traducción, la aplicamos al modelo
     if (modelName) {
-      // "traverse" recorre las 5 mallas de tu personaje (FACE, EYES, LOW_THOOTH...)
       avatarModel.traverse((child) => {
         if (child.isMesh && child.morphTargetDictionary && child.morphTargetDictionary[modelName] !== undefined) {
           const index = child.morphTargetDictionary[modelName];
-          child.morphTargetInfluences[index] = score; // ¡Aquí ocurre la magia!
+          child.morphTargetInfluences[index] = score;
         }
       });
     }
   });
+}
+
+// NUEVA FUNCIÓN: APLICAR ROTACIÓN AL HUESO
+function applyHeadPoseToModel(matrixData) {
+  if (!headBone) return;
+
+  // 1. Convertir la matriz de MediaPipe a Rotación (Euler)
+  const matrix = new THREE.Matrix4().fromArray(matrixData);
+  const rotation = new THREE.Euler().setFromRotationMatrix(matrix);
+
+  // 2. CALIBRACIÓN DE EJES (Mapeo)
+  // ¡ATENCIÓN! Aquí es donde probablemente debas hacer ajustes.
+  // Blender (Auto-Rig Pro) suele tener orientaciones locales extrañas para los huesos.
+  // Si al mover la cabeza arriba/abajo el modelo la mueve de lado a lado,
+  // cambia la asignación de ejes a continuación.
+
+  // Configuración de prueba inicial (Asume que Y local apunta hacia arriba en el hueso):
+  const pitch = rotation.x; // Mirar arriba/abajo
+  const yaw = -rotation.y;  // Girar izquierda/derecha (invertido para espejo)
+  const roll = -rotation.z; // Inclinar cabeza a los hombros (invertido para espejo)
+
+  // Asignación al hueso 'headx'
+  // SI FUNCIONA MAL, PRUEBA COMBINACIONES COMO: 
+  // headBone.rotation.x = yaw; 
+  // headBone.rotation.y = pitch; etc...
+  
+  headBone.rotation.x = pitch;
+  headBone.rotation.y = yaw;
+  headBone.rotation.z = roll;
+
+  // Opcional: Distribuir la rotación entre el cuello y la cabeza para mayor realismo
+  /*
+  if(neckBone) {
+      headBone.rotation.x = pitch * 0.6; // La cabeza hace el 60% del movimiento
+      headBone.rotation.y = yaw * 0.6;
+      headBone.rotation.z = roll * 0.6;
+
+      neckBone.rotation.x = pitch * 0.4; // El cuello hace el 40% restante
+      neckBone.rotation.y = yaw * 0.4;
+      neckBone.rotation.z = roll * 0.4;
+  }
+  */
 }
 
 initThreeJS();
