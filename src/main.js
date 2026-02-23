@@ -18,11 +18,12 @@ let lastVideoTime = -1;
 let results = undefined;
 const drawingUtils = new DrawingUtils(canvasCtx);
 
-// VARIABLES PARA EL HUESO DE LA CABEZA
+// VARIABLES PARA EL HUESO DE LA CABEZA Y EL MODELO
 let headBone = null;
-let neckBone = null; // Opcional, para rotación más natural
+let neckBone = null;
+let avatarModel = null; // Lo subimos al scope global para acceder al cargarlo
 
-// 1. Inicializar el modelo
+// 1. Inicializar el modelo de MediaPipe
 async function createFaceLandmarker() {
   const filesetResolver = await FilesetResolver.forVisionTasks(
     "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
@@ -33,7 +34,7 @@ async function createFaceLandmarker() {
       delegate: "GPU"
     },
     outputFaceBlendshapes: true,
-    outputFacialTransformationMatrixes: true, // ¡CRUCIAL PARA LA ROTACIÓN!
+    outputFacialTransformationMatrixes: true,
     runningMode: "VIDEO",
     numFaces: 1
   });
@@ -90,7 +91,6 @@ async function predictWebcam() {
 
   canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
 
-  // Dibujar malla de MediaPipe
   if (results && results.faceLandmarks) {
     for (const landmarks of results.faceLandmarks) {
       drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_TESSELATION, { color: "#C0C0C070", lineWidth: 1 });
@@ -103,14 +103,12 @@ async function predictWebcam() {
     }
   }
 
-  // Actualizar UI y Modelo 3D (Expresiones y Rotación)
   if (results) {
     if (results.faceBlendshapes && results.faceBlendshapes.length > 0) {
       drawBlendShapes(videoBlendShapes, results.faceBlendshapes);
       applyBlendshapesToModel(results.faceBlendshapes);
     }
     
-    // APLICAR ROTACIÓN AL HUESO
     if (results.facialTransformationMatrixes && results.facialTransformationMatrixes.length > 0) {
       applyHeadPoseToModel(results.facialTransformationMatrixes[0].data);
     }
@@ -144,7 +142,7 @@ function drawBlendShapes(el, blendShapes) {
 // CONFIGURACIÓN DEL VISOR 3D (THREE.JS)
 // ==========================================
 const threeContainer = document.getElementById('three-container');
-let scene, camera, renderer, avatarModel;
+let scene, camera, renderer;
 
 function initThreeJS() {
   scene = new THREE.Scene();
@@ -167,27 +165,6 @@ function initThreeJS() {
   controls.target.set(0, 1.5, 0);
   controls.update();
 
-  const loader = new GLTFLoader();
-  loader.load('/avatar.glb', (gltf) => {
-    avatarModel = gltf.scene;
-    scene.add(avatarModel);
-    console.log("¡Modelo 3D cargado exitosamente!");
-
-    // BUSCAR LOS HUESOS DE AUTO-RIG PRO
-    // Usamos 'headx' como base. Si no funciona, prueba 'c_headx'
-    headBone = avatarModel.getObjectByName("headx"); 
-    neckBone = avatarModel.getObjectByName("neckx"); // Opcional
-
-    if(headBone) {
-      console.log("Hueso de la cabeza encontrado y vinculado:", headBone.name);
-    } else {
-      console.error("NO se encontró el hueso 'headx'. Verifica los nombres en Blender.");
-    }
-
-  }, undefined, (error) => {
-    console.error("Error al cargar el modelo 3D:", error);
-  });
-
   function animate3D() {
     requestAnimationFrame(animate3D);
     renderer.render(scene, camera);
@@ -201,126 +178,43 @@ function initThreeJS() {
   });
 }
 
-// DICCIONARIO DE TRADUCCIÓN: MediaPipe -> Auto-Rig Pro
 const blendshapeMap = {
-  eyeBlinkLeft: "Eye_Blink_L",
-  eyeLookDownLeft: "Eye_L_Look_Down",
-  eyeLookInLeft: "Eye_L_Look_R",
-  eyeLookOutLeft: "Eye_L_Look_L",
-  eyeLookUpLeft: "Eye_L_Look_Up",
-  eyeSquintLeft: "Eye_Squint_L",
-  eyeWideLeft: "Eye_Wide_L",
-  eyeBlinkRight: "Eye_Blink_R",
-  eyeLookDownRight: "Eye_R_Look_Down",
-  eyeLookInRight: "Eye_R_Look_L",
-  eyeLookOutRight: "Eye_R_Look_R",
-  eyeLookUpRight: "Eye_R_Look_Up",
-  eyeSquintRight: "Eye_Squint_R",
-  eyeWideRight: "Eye_Wide_R",
-  jawForward: "Jaw_Forward",
-  jawLeft: "Jaw_L",
-  jawRight: "Jaw_R",
-  jawOpen: "Jaw_Open",
-  mouthClose: "Mouth_Close",
-  mouthFunnel: "Mouth_Funnel",
-  mouthPucker: "Mouth_Pucker",
-  mouthLeft: "Mouth_L",
-  mouthRight: "Mouth_R",
-  mouthSmileLeft: "Mouth_Smile_L",
-  mouthSmileRight: "Mouth_Smile_R",
-  mouthFrownLeft: "Mouth_Frown_L",
-  mouthFrownRight: "Mouth_Frown_R",
-  mouthDimpleLeft: "Mouth_Dimple_L",
-  mouthDimpleRight: "Mouth_Dimple_R",
-  mouthStretchLeft: "Mouth_Stretch_L",
-  mouthStretchRight: "Mouth_Stretch_R",
-  mouthRollLower: "Mouth_Roll_In_Lower",
-  mouthRollUpper: "Mouth_Roll_In_Upper",
-  mouthShrugLower: "Mouth_Shrug_Lower",
-  mouthShrugUpper: "Mouth_Shrug_Upper",
-  mouthPressLeft: "Mouth_Press_L",
-  mouthPressRight: "Mouth_Press_R",
-  mouthLowerDownLeft: "Mouth_Down_Lower_L",
-  mouthLowerDownRight: "Mouth_Down_Lower_R",
-  mouthUpperUpLeft: "Mouth_Up_Upper_L",
-  mouthUpperUpRight: "Mouth_Up_Upper_R",
-  browDownLeft: "Brow_Drop_L",
-  browDownRight: "Brow_Drop_R",
-  browInnerUp: "Brow_Raise_Inner_L", 
-  browOuterUpLeft: "Brow_Raise_Outer_L",
-  browOuterUpRight: "Brow_Raise_Outer_R",
-  cheekPuff: "Cheek_Puff_L",
-  cheekSquintLeft: "Cheek_Raise_L",
-  cheekSquintRight: "Cheek_Raise_R",
-  noseSneerLeft: "Nose_Sneer_L",
-  noseSneerRight: "Nose_Sneer_R"
+  // ... (Mantenemos tu diccionario intacto) ...
+  eyeBlinkLeft: "Eye_Blink_L", eyeLookDownLeft: "Eye_L_Look_Down", eyeLookInLeft: "Eye_L_Look_R", eyeLookOutLeft: "Eye_L_Look_L", eyeLookUpLeft: "Eye_L_Look_Up", eyeSquintLeft: "Eye_Squint_L", eyeWideLeft: "Eye_Wide_L", eyeBlinkRight: "Eye_Blink_R", eyeLookDownRight: "Eye_R_Look_Down", eyeLookInRight: "Eye_R_Look_L", eyeLookOutRight: "Eye_R_Look_R", eyeLookUpRight: "Eye_R_Look_Up", eyeSquintRight: "Eye_Squint_R", eyeWideRight: "Eye_Wide_R", jawForward: "Jaw_Forward", jawLeft: "Jaw_L", jawRight: "Jaw_R", jawOpen: "Jaw_Open", mouthClose: "Mouth_Close", mouthFunnel: "Mouth_Funnel", mouthPucker: "Mouth_Pucker", mouthLeft: "Mouth_L", mouthRight: "Mouth_R", mouthSmileLeft: "Mouth_Smile_L", mouthSmileRight: "Mouth_Smile_R", mouthFrownLeft: "Mouth_Frown_L", mouthFrownRight: "Mouth_Frown_R", mouthDimpleLeft: "Mouth_Dimple_L", mouthDimpleRight: "Mouth_Dimple_R", mouthStretchLeft: "Mouth_Stretch_L", mouthStretchRight: "Mouth_Stretch_R", mouthRollLower: "Mouth_Roll_In_Lower", mouthRollUpper: "Mouth_Roll_In_Upper", mouthShrugLower: "Mouth_Shrug_Lower", mouthShrugUpper: "Mouth_Shrug_Upper", mouthPressLeft: "Mouth_Press_L", mouthPressRight: "Mouth_Press_R", mouthLowerDownLeft: "Mouth_Down_Lower_L", mouthLowerDownRight: "Mouth_Down_Lower_R", mouthUpperUpLeft: "Mouth_Up_Upper_L", mouthUpperUpRight: "Mouth_Up_Upper_R", browDownLeft: "Brow_Drop_L", browDownRight: "Brow_Drop_R", browInnerUp: "Brow_Raise_Inner_L", browOuterUpLeft: "Brow_Raise_Outer_L", browOuterUpRight: "Brow_Raise_Outer_R", cheekPuff: "Cheek_Puff_L", cheekSquintLeft: "Cheek_Raise_L", cheekSquintRight: "Cheek_Raise_R", noseSneerLeft: "Nose_Sneer_L", noseSneerRight: "Nose_Sneer_R"
 };
 
 function applyBlendshapesToModel(mediaPipeBlendshapes) {
   if (!avatarModel || !mediaPipeBlendshapes || mediaPipeBlendshapes.length === 0) return;
-
   const shapes = mediaPipeBlendshapes[0].categories;
-
   shapes.forEach((shape) => {
-    const mediaPipeName = shape.categoryName; 
-    const score = shape.score;
-    const modelName = blendshapeMap[mediaPipeName];
-
+    const modelName = blendshapeMap[shape.categoryName];
     if (modelName) {
       avatarModel.traverse((child) => {
         if (child.isMesh && child.morphTargetDictionary && child.morphTargetDictionary[modelName] !== undefined) {
           const index = child.morphTargetDictionary[modelName];
-          child.morphTargetInfluences[index] = score;
+          child.morphTargetInfluences[index] = shape.score;
         }
       });
     }
   });
 }
 
-// NUEVA FUNCIÓN: APLICAR ROTACIÓN AL HUESO
 function applyHeadPoseToModel(matrixData) {
   if (!headBone) return;
-
-  // 1. Convertir la matriz de MediaPipe a Rotación (Euler)
   const matrix = new THREE.Matrix4().fromArray(matrixData);
   const rotation = new THREE.Euler().setFromRotationMatrix(matrix);
-
-  // 2. CALIBRACIÓN DE EJES (Mapeo)
-  // ¡ATENCIÓN! Aquí es donde probablemente debas hacer ajustes.
-  // Blender (Auto-Rig Pro) suele tener orientaciones locales extrañas para los huesos.
-  // Si al mover la cabeza arriba/abajo el modelo la mueve de lado a lado,
-  // cambia la asignación de ejes a continuación.
-
-  // Configuración de prueba inicial (Asume que Y local apunta hacia arriba en el hueso):
-  const pitch = rotation.x; // Mirar arriba/abajo
-  const yaw = -rotation.y;  // Girar izquierda/derecha (invertido para espejo)
-  const roll = -rotation.z; // Inclinar cabeza a los hombros (invertido para espejo)
-
-  // Asignación al hueso 'headx'
-  // SI FUNCIONA MAL, PRUEBA COMBINACIONES COMO: 
-  // headBone.rotation.x = yaw; 
-  // headBone.rotation.y = pitch; etc...
   
+  const pitch = rotation.x; 
+  const yaw = -rotation.y;  
+  const roll = -rotation.z; 
+
   headBone.rotation.x = pitch;
   headBone.rotation.y = yaw;
   headBone.rotation.z = roll;
-
-  // Opcional: Distribuir la rotación entre el cuello y la cabeza para mayor realismo
-  /*
-  if(neckBone) {
-      headBone.rotation.x = pitch * 0.6; // La cabeza hace el 60% del movimiento
-      headBone.rotation.y = yaw * 0.6;
-      headBone.rotation.z = roll * 0.6;
-
-      neckBone.rotation.x = pitch * 0.4; // El cuello hace el 40% restante
-      neckBone.rotation.y = yaw * 0.4;
-      neckBone.rotation.z = roll * 0.4;
-  }
-  */
 }
 
 // ==========================================
-// GESTOR DE RETARGETING (FASE 1 - LÓGICA UI)
+// GESTOR DE RETARGETING Y DRAG & DROP
 // ==========================================
 
 const setupModal = document.getElementById('setup-modal');
@@ -328,49 +222,109 @@ const confirmBtn = document.getElementById('confirm-mapping-btn');
 const headSelect = document.getElementById('head-bone-select');
 const neckSelect = document.getElementById('neck-bone-select');
 const activeBoneDisplay = document.getElementById('active-bone-display');
+const placeholderText = document.querySelector('.preview-placeholder');
 
-// Simulación de huesos detectados (En el futuro, esto lo extraeremos del .glb)
-const mockBonesFromModel = [
-  "c_rootx", "c_spine_01x", "neckx", "c_neckx", "headx", "c_headx", "jawbonex"
-];
+// 1. Lógica de Drag and Drop para cargar el archivo
+window.addEventListener('dragover', (e) => {
+  e.preventDefault(); // Necesario para permitir el "drop"
+});
 
-// 1. Poblar los selectores con los huesos encontrados
+window.addEventListener('drop', (e) => {
+  e.preventDefault();
+  const file = e.dataTransfer.files[0];
+  
+  if (file && (file.name.toLowerCase().endsWith('.glb') || file.name.toLowerCase().endsWith('.gltf'))) {
+    if(placeholderText) placeholderText.innerText = "Cargando modelo...";
+    
+    // Crear una URL temporal para el archivo arrastrado
+    const fileURL = URL.createObjectURL(file);
+    
+    // Cargar el modelo en Three.js
+    const loader = new GLTFLoader();
+    loader.load(fileURL, (gltf) => {
+      // Si ya había un modelo, lo eliminamos de la escena primero
+      if (avatarModel) {
+        scene.remove(avatarModel);
+      }
+      
+      avatarModel = gltf.scene;
+      scene.add(avatarModel);
+      if(placeholderText) placeholderText.style.display = "none";
+      console.log(`¡Modelo ${file.name} cargado exitosamente!`);
+
+      // 2. Extraer los huesos reales del modelo cargado
+      const detectedBones = [];
+      avatarModel.traverse((node) => {
+        if (node.isBone) {
+          detectedBones.push(node.name);
+        }
+      });
+
+      console.log(`Se encontraron ${detectedBones.length} huesos.`);
+      populateBoneSelectors(detectedBones);
+
+    }, undefined, (error) => {
+      console.error("Error al cargar el modelo:", error);
+      if(placeholderText) placeholderText.innerText = "Error al cargar el modelo.";
+    });
+  } else {
+    alert("Por favor, arrastra un archivo válido en formato .glb o .gltf");
+  }
+});
+
+// 3. Poblar los selectores limpiando las opciones previas
 function populateBoneSelectors(bonesList) {
+  // Limpiar opciones anteriores
+  headSelect.innerHTML = '<option value="">-- Selecciona un hueso --</option>';
+  neckSelect.innerHTML = '<option value="">-- Selecciona un hueso --</option>';
+
+  // Agregar los huesos reales detectados
   bonesList.forEach(bone => {
-    const option1 = new Option(bone, bone);
-    const option2 = new Option(bone, bone);
-    headSelect.add(option1);
-    neckSelect.add(option2);
+    headSelect.add(new Option(bone, bone));
+    neckSelect.add(new Option(bone, bone));
   });
 }
 
-// 2. Lógica de Feedback Visual
+// 4. Lógica de Feedback Visual en UI
 function highlightBoneInUI(boneName) {
   if (boneName) {
     activeBoneDisplay.textContent = `🦴 ${boneName}`;
     activeBoneDisplay.className = 'active-bone-selected';
-    // TODO (Fase 2): Aquí llamaremos a Three.js para que el hueso brille en el visor 3D
     console.log(`[Feedback 3D] Iluminando hueso: ${boneName} en el visor.`);
   } else {
     activeBoneDisplay.textContent = "Ninguno";
     activeBoneDisplay.className = 'active-bone-none';
-    // TODO (Fase 2): Apagar brillos en Three.js
   }
 }
 
-// Listeners de los selectores
 headSelect.addEventListener('change', (e) => highlightBoneInUI(e.target.value));
 neckSelect.addEventListener('change', (e) => highlightBoneInUI(e.target.value));
 
-// Botón para cerrar el modal y empezar
+// 5. Botón para confirmar y asignar los huesos reales
 confirmBtn.addEventListener('click', () => {
-  console.log("Hueso de Cabeza asignado:", headSelect.value);
-  console.log("Hueso de Cuello asignado:", neckSelect.value);
-  setupModal.style.display = 'none'; // Oculta el modal y muestra tu app principal
-  // Aquí iniciariamos la cámara
+  if (!avatarModel) {
+    alert("¡Primero arrastra y suelta un modelo .glb en la pantalla!");
+    return;
+  }
+
+  const selectedHead = headSelect.value;
+  const selectedNeck = neckSelect.value;
+
+  // Asignar los huesos seleccionados en la UI a las variables globales para la rotación
+  if (selectedHead) {
+    headBone = avatarModel.getObjectByName(selectedHead);
+    console.log("Hueso de Cabeza asignado exitosamente:", headBone.name);
+  } else {
+    console.warn("No se seleccionó hueso para la cabeza. La rotación no funcionará.");
+  }
+
+  if (selectedNeck) {
+    neckBone = avatarModel.getObjectByName(selectedNeck);
+  }
+
+  // Ocultar modal y habilitar la experiencia
+  setupModal.style.display = 'none';
 });
 
-// Inicializar prueba de UI
-populateBoneSelectors(mockBonesFromModel);
-
+// Iniciar Escena
 initThreeJS();
