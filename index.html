@@ -125,6 +125,69 @@
 
   </div>
 
+  <div class="top-section">
+        <div class="panel-header">
+          <h2>Panel de Control</h2>
+        </div>
+
+        <div class="video-wrapper">
+          <div class="video-section">
+            <div id="recording-indicator" class="hidden rec-dot"></div>
+            <video id="webcam" autoplay playsinline></video>
+            <canvas class="output_canvas" id="output_canvas"></canvas>
+          </div>
+          
+          <div class="cam-controls">
+             <button id="webcamButton" class="mdc-button mdc-button--raised accent-btn" style="flex: 1;">
+              <span class="mdc-button__ripple"></span>
+              <span class="mdc-button__icon material-icons" aria-hidden="true">videocam</span>
+            </button>
+
+            <button id="recordButton" class="mdc-button mdc-button--raised record-btn" style="flex: 1;" disabled>
+              <span class="mdc-button__ripple"></span>
+              <span class="mdc-button__icon material-icons" aria-hidden="true">fiber_manual_record</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="playback-controls">
+        <button id="playButton" class="mdc-button mdc-button--outlined full-width-btn" disabled>
+          <span class="mdc-button__ripple"></span>
+          <span class="mdc-button__icon material-icons" id="playIcon">play_arrow</span>
+          <span class="mdc-button__label" id="playLabel">REVISAR GRABACIÓN</span>
+        </button>
+
+        <button id="exportButton" class="mdc-button mdc-button--outlined full-width-btn" disabled style="margin-top: 10px; border-color: #444; color: #888;">
+          <span class="mdc-button__ripple"></span>
+          <span class="mdc-button__icon material-icons">download</span>
+          <span class="mdc-button__label">EXPORTAR .GLB (Fase 3)</span>
+        </button>
+      </div>
+
+      <div class="bottom-section">
+        ```
+
+### 2. CSS (`src/style.css`)
+
+Añadimos estilos para la nueva sección de playback.
+
+```css
+/* ... (Estilos anteriores) ... */
+
+/* Nueva sección de controles de reproducción */
+.playback-controls {
+  padding: 15px 20px;
+  background-color: var(--color-secondary);
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* Estado activo del botón Play */
+.playing {
+  background-color: rgba(0, 188, 212, 0.1) !important;
+  border-color: #00bcd4 !important;
+  color: #00bcd4 !important;
+}
   
 
   <script type="module" src="./src/main.js"></script>
