@@ -3,65 +3,73 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Face Tracker - Cyberpunk Edition</title>
+  <title>Face Tracker & 3D Viewer - Red Edition</title>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  
   <link href="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.css" rel="stylesheet">
   <link rel="stylesheet" href="./src/style.css">
 </head>
 <body>
-
+  
   <div id="setup-modal" class="modal-overlay">
     <div class="modal-content">
       
       <div class="modal-header">
-        <h2>SYSTEM CONFIGURATION // <span class="subtitle">SKELETON MAPPING</span></h2>
+        <h2>Asignación de Esqueleto</h2>
         <button id="confirm-mapping-btn" class="mdc-button mdc-button--raised confirm-btn">
           <span class="mdc-button__ripple"></span>
-          <span class="mdc-button__label">INITIATE SYSTEM</span>
+          <span class="mdc-button__label">CONFIRMAR Y EMPEZAR</span>
         </button>
       </div>
 
       <div class="modal-body">
+        
         <div class="modal-left" id="preview-three-container">
-          <div class="preview-placeholder">
-            <div class="loader-spinner"></div>
-            <p>AWAITING MODEL INPUT...</p>
-          </div>
+          <div class="preview-placeholder">Arrastra tu modelo .glb aquí</div>
         </div>
 
         <div class="modal-right">
           
-          <h3>AUTO-DIAGNOSTICS</h3>
+          <div class="control-header">
+            <h3>Configuración del Rig</h3>
+            <p class="help-text">Arrastra un archivo .glb y configura los huesos.</p>
+          </div>
+
           <div class="auto-detect-bar">
             <button id="auto-detect-btn" class="mdc-button mdc-button--outlined full-width-btn">
               <span class="mdc-button__ripple"></span>
-              <span class="mdc-button__label">✨ RUN SMART SCAN</span>
+              <i class="material-icons mdc-button__icon" aria-hidden="true">auto_fix_high</i>
+              <span class="mdc-button__label">AUTO-DETECTAR</span>
             </button>
           </div>
 
-          <h3>MANUAL OVERRIDE</h3>
-          <p class="help-text">Verify neural links to bone structure.</p>
-
           <div class="mapping-form">
             <div class="form-group">
-              <label for="head-bone-select" class="bone-label">CRANIAL LINK (Head):</label>
-              <input type="text" id="head-bone-search" class="bone-search-input" placeholder=">> Search bone ID..." autocomplete="off">
-              <select id="head-bone-select" class="bone-select">
-                <option value="">-- NO SIGNAL --</option>
-              </select>
+              <label for="head-bone-select" class="bone-label">Hueso de la Cabeza (Head)</label>
+              <div class="input-group">
+                <input type="text" id="head-bone-search" class="bone-search-input" placeholder="Filtrar..." autocomplete="off">
+                <select id="head-bone-select" class="bone-select">
+                  <option value="">-- Selecciona --</option>
+                </select>
+              </div>
             </div>
 
             <div class="form-group">
-              <label for="neck-bone-select" class="bone-label">CERVICAL LINK (Neck):</label>
-              <input type="text" id="neck-bone-search" class="bone-search-input" placeholder=">> Search bone ID..." autocomplete="off">
-              <select id="neck-bone-select" class="bone-select">
-                <option value="">-- NO SIGNAL --</option>
-              </select>
+              <label for="neck-bone-select" class="bone-label">Hueso del Cuello (Neck)</label>
+              <div class="input-group">
+                <input type="text" id="neck-bone-search" class="bone-search-input" placeholder="Filtrar..." autocomplete="off">
+                <select id="neck-bone-select" class="bone-select">
+                  <option value="">-- Selecciona --</option>
+                </select>
+              </div>
             </div>
           </div>
 
           <div class="feedback-panel">
-            <h4>TARGET LOCKED:</h4>
-            <div id="active-bone-display" class="active-bone-none">WAITING...</div>
+            <h4>Hueso Seleccionado</h4>
+            <div id="active-bone-display" class="active-bone-none">Ninguno</div>
           </div>
 
         </div>
@@ -72,24 +80,38 @@
   
   <div class="app-container">
     
-    <div class="left-panel" id="three-container"></div>
+    <div class="left-panel" id="three-container">
+      </div>
 
     <div class="right-panel">
-      <h2>NEURAL TRACKING</h2>
-      <button id="webcamButton" class="mdc-button mdc-button--raised action-btn">
-        <span class="mdc-button__ripple"></span>
-        <span class="mdc-button__label" id="webcamLabel">ACTIVATE OPTIC SENSOR</span>
-      </button>
+      
+      <div class="top-section">
+        <div class="panel-header">
+          <h2>Panel de Control</h2>
+        </div>
 
-      <div class="video-section">
-        <video id="webcam" autoplay playsinline></video>
-        <canvas class="output_canvas" id="output_canvas"></canvas>
-        <div class="scan-line"></div> </div>
-
-      <div class="data-section">
-        <h3>TELEMETRY (ARKit)</h3>
-        <ul class="blend-shapes-list" id="video-blend-shapes"></ul>
+        <div class="video-wrapper">
+          <div class="video-section">
+            <video id="webcam" autoplay playsinline></video>
+            <canvas class="output_canvas" id="output_canvas"></canvas>
+          </div>
+          
+          <div class="cam-controls">
+             <button id="webcamButton" class="mdc-button mdc-button--raised accent-btn full-width-btn">
+              <span class="mdc-button__ripple"></span>
+              <span class="mdc-button__label" id="webcamLabel">CÁMARA</span>
+            </button>
+          </div>
+        </div>
       </div>
+
+      <div class="bottom-section">
+        <h3>Datos de Rastreo</h3>
+        <div class="data-scroll-area">
+          <ul class="blend-shapes-list" id="video-blend-shapes"></ul>
+        </div>
+      </div>
+
     </div>
 
   </div>
