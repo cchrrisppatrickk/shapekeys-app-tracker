@@ -8,6 +8,53 @@
   <link rel="stylesheet" href="./src/style.css">
 </head>
 <body>
+  <div id="setup-modal" class="modal-overlay">
+    <div class="modal-content">
+      
+      <div class="modal-header">
+        <h2>Asignación de Esqueleto</h2>
+        <button id="confirm-mapping-btn" class="mdc-button mdc-button--raised confirm-btn">
+          <span class="mdc-button__ripple"></span>
+          <span class="mdc-button__label">CONFIRMAR Y EMPEZAR</span>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="modal-left" id="preview-three-container">
+          <div class="preview-placeholder">Visor 3D de Huesos (Cargando...)</div>
+        </div>
+
+        <div class="modal-right">
+          <h3>Mapeo de Huesos Clave</h3>
+          <p class="help-text">Verifica o asigna manualmente los huesos que controlarán la rotación.</p>
+
+          <div class="mapping-form">
+            <div class="form-group">
+              <label for="head-bone-select" class="bone-label">Hueso de la Cabeza (Head):</label>
+              <select id="head-bone-select" class="bone-select">
+                <option value="">-- Selecciona un hueso --</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+              <label for="neck-bone-select" class="bone-label">Hueso del Cuello (Neck):</label>
+              <select id="neck-bone-select" class="bone-select">
+                <option value="">-- Selecciona un hueso --</option>
+                </select>
+            </div>
+          </div>
+
+          <div class="feedback-panel">
+            <h4>Hueso Resaltado en Visor:</h4>
+            <div id="active-bone-display" class="active-bone-none">Ninguno</div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+  
   <div class="app-container">
     
     <div class="left-panel" id="three-container">

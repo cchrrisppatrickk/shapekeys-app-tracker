@@ -319,4 +319,58 @@ function applyHeadPoseToModel(matrixData) {
   */
 }
 
+// ==========================================
+// GESTOR DE RETARGETING (FASE 1 - LÓGICA UI)
+// ==========================================
+
+const setupModal = document.getElementById('setup-modal');
+const confirmBtn = document.getElementById('confirm-mapping-btn');
+const headSelect = document.getElementById('head-bone-select');
+const neckSelect = document.getElementById('neck-bone-select');
+const activeBoneDisplay = document.getElementById('active-bone-display');
+
+// Simulación de huesos detectados (En el futuro, esto lo extraeremos del .glb)
+const mockBonesFromModel = [
+  "c_rootx", "c_spine_01x", "neckx", "c_neckx", "headx", "c_headx", "jawbonex"
+];
+
+// 1. Poblar los selectores con los huesos encontrados
+function populateBoneSelectors(bonesList) {
+  bonesList.forEach(bone => {
+    const option1 = new Option(bone, bone);
+    const option2 = new Option(bone, bone);
+    headSelect.add(option1);
+    neckSelect.add(option2);
+  });
+}
+
+// 2. Lógica de Feedback Visual
+function highlightBoneInUI(boneName) {
+  if (boneName) {
+    activeBoneDisplay.textContent = `🦴 ${boneName}`;
+    activeBoneDisplay.className = 'active-bone-selected';
+    // TODO (Fase 2): Aquí llamaremos a Three.js para que el hueso brille en el visor 3D
+    console.log(`[Feedback 3D] Iluminando hueso: ${boneName} en el visor.`);
+  } else {
+    activeBoneDisplay.textContent = "Ninguno";
+    activeBoneDisplay.className = 'active-bone-none';
+    // TODO (Fase 2): Apagar brillos en Three.js
+  }
+}
+
+// Listeners de los selectores
+headSelect.addEventListener('change', (e) => highlightBoneInUI(e.target.value));
+neckSelect.addEventListener('change', (e) => highlightBoneInUI(e.target.value));
+
+// Botón para cerrar el modal y empezar
+confirmBtn.addEventListener('click', () => {
+  console.log("Hueso de Cabeza asignado:", headSelect.value);
+  console.log("Hueso de Cuello asignado:", neckSelect.value);
+  setupModal.style.display = 'none'; // Oculta el modal y muestra tu app principal
+  // Aquí iniciariamos la cámara
+});
+
+// Inicializar prueba de UI
+populateBoneSelectors(mockBonesFromModel);
+
 initThreeJS();
