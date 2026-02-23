@@ -92,18 +92,25 @@
 
         <div class="video-wrapper">
           <div class="video-section">
+            <div id="recording-indicator" class="hidden rec-dot"></div>
+            
             <video id="webcam" autoplay playsinline></video>
             <canvas class="output_canvas" id="output_canvas"></canvas>
           </div>
           
           <div class="cam-controls">
-             <button id="webcamButton" class="mdc-button mdc-button--raised accent-btn full-width-btn">
+             <button id="webcamButton" class="mdc-button mdc-button--raised accent-btn" style="flex: 1;">
               <span class="mdc-button__ripple"></span>
               <span class="mdc-button__label" id="webcamLabel">CÁMARA</span>
             </button>
+
+            <button id="recordButton" class="mdc-button mdc-button--raised record-btn" style="flex: 1;" disabled>
+              <span class="mdc-button__ripple"></span>
+              <i class="material-icons mdc-button__icon" aria-hidden="true">fiber_manual_record</i>
+              <span class="mdc-button__label" id="recordLabel">REC</span>
+            </button>
           </div>
         </div>
-      </div>
 
       <div class="bottom-section">
         <h3>Datos de Rastreo</h3>
@@ -114,7 +121,11 @@
 
     </div>
 
+    
+
   </div>
+
+  
 
   <script type="module" src="./src/main.js"></script>
 </body>

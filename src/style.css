@@ -259,3 +259,57 @@ video {
   border-radius: 4px;
   text-align: center;
 }
+
+/* Contenedor de botones de cámara */
+.cam-controls {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+/* Botón de Grabación */
+.record-btn {
+  background-color: #333 !important; /* Gris cuando está inactivo */
+  color: #888 !important;
+  transition: all 0.3s ease;
+}
+
+.record-btn:not(:disabled) {
+  color: white !important;
+}
+
+/* Estado Activo (Grabando) */
+.record-btn.recording {
+  background-color: #ff3b30 !important; /* Rojo vivo */
+  color: white !important;
+  animation: pulse-btn 2s infinite;
+}
+
+/* Indicador REC sobre el video */
+.rec-dot {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  width: 12px;
+  height: 12px;
+  background-color: #ff3b30;
+  border-radius: 50%;
+  z-index: 10;
+  box-shadow: 0 0 10px rgba(255, 59, 48, 0.8);
+  animation: blink-dot 1s infinite;
+}
+
+.rec-dot.hidden { display: none; }
+
+/* Animaciones */
+@keyframes blink-dot {
+  0% { opacity: 1; }
+  50% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes pulse-btn {
+  0% { box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(255, 59, 48, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 59, 48, 0); }
+}
