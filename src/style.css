@@ -209,3 +209,30 @@ video {
 
 .active-bone-none { color: #555; }
 .active-bone-selected { background-color: rgba(0, 188, 212, 0.2); color: #00bcd4; } 
+
+/* Estilos para el input de búsqueda de huesos */
+.bone-search-input {
+  width: 100%;
+  padding: 8px 10px;
+  box-sizing: border-box; /* Asegura que el padding no rompa el ancho */
+  background-color: #252525;
+  border: 1px solid #444;
+  border-bottom: none; /* Se une visualmente con el select de abajo */
+  border-radius: 6px 6px 0 0; /* Redondeado solo arriba */
+  color: #fff;
+  font-size: 0.9rem;
+  outline: none;
+  transition: background-color 0.2s;
+}
+
+.bone-search-input:focus {
+  background-color: #333;
+  border-color: #00bcd4;
+}
+
+/* Ajuste al select para que parezca conectado al buscador */
+.bone-select {
+  border-radius: 0 0 6px 6px; /* Redondeado solo abajo */
+  border-top: 1px solid #333; /* Separación sutil */
+  margin-top: 0; /* Pegado al input */
+}

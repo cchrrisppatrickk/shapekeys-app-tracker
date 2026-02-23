@@ -23,6 +23,13 @@ const neckSelect = document.getElementById('neck-bone-select');
 const activeBoneDisplay = document.getElementById('active-bone-display');
 const placeholderText = document.querySelector('.preview-placeholder');
 
+// REFERENCIAS DOM NUEVAS (Inputs de búsqueda)
+const headSearchInput = document.getElementById('head-bone-search');
+const neckSearchInput = document.getElementById('neck-bone-search');
+
+// Variable para guardar TODOS los huesos del modelo actual
+let allDetectedBones = [];
+
 // VARIABLES GLOBALES
 let faceLandmarker;
 let webcamRunning = false;
@@ -148,11 +155,18 @@ window.addEventListener('drop', (e) => {
       console.log(`¡Modelo ${file.name} cargado!`);
 
       // Extraer huesos para la UI
+      // Extraer huesos para la UI
       const detectedBones = [];
       avatarModel.traverse((node) => {
         if (node.isBone) detectedBones.push(node.name);
       });
 
+      // ¡AQUÍ LLAMAMOS A LA NUEVA FUNCIÓN!
+      populateBoneSelectors(detectedBones);
+
+      // La auto-selección debe ocurrir DESPUÉS de poblar
+      autoSelectBone(detectedBones, ['head', 'headx', 'c_head', 'mixamorig:head'], headSelect);
+      autoSelectBone(detectedBones, ['neck', 'neckx', 'c_neck', 'mixamorig:neck'], neckSelect);
       populateBoneSelectors(detectedBones);
 
       // Intento de auto-detección simple (Fase preliminar)
@@ -166,14 +180,58 @@ window.addEventListener('drop', (e) => {
   }
 });
 
+// ==========================================
+// NUEVA LÓGICA DE POBLADO Y FILTRADO
+// ==========================================
+
+// Esta función se llama cuando cargamos el modelo (dentro del loader.load)
 function populateBoneSelectors(bonesList) {
-  headSelect.innerHTML = '<option value="">-- Selecciona --</option>';
-  neckSelect.innerHTML = '<option value="">-- Selecciona --</option>';
-  bonesList.forEach(bone => {
-    headSelect.add(new Option(bone, bone));
-    neckSelect.add(new Option(bone, bone));
-  });
+  // 1. Guardamos la lista maestra
+  allDetectedBones = bonesList;
+
+  // 2. Limpiamos los inputs de búsqueda
+  headSearchInput.value = "";
+  neckSearchInput.value = "";
+
+  // 3. Renderizamos las opciones completas inicialmente
+  renderOptions(headSelect, allDetectedBones);
+  renderOptions(neckSelect, allDetectedBones);
 }
+
+// Función auxiliar para renderizar opciones en un select específico
+function renderOptions(selectElement, bones, selectedValue = null) {
+  // Guardar el valor seleccionado actual si no se pasa uno explícito
+  const currentSelection = selectedValue || selectElement.value;
+
+  selectElement.innerHTML = '<option value="">-- Selecciona --</option>';
+  
+  bones.forEach(bone => {
+    const option = new Option(bone, bone);
+    selectElement.add(option);
+  });
+
+  // Intentar restaurar la selección si aún existe en la lista filtrada
+  if (currentSelection && bones.includes(currentSelection)) {
+    selectElement.value = currentSelection;
+  }
+}
+
+// Función de filtrado (Event Listener)
+function filterBones(searchInput, selectElement) {
+  const term = searchInput.value.toLowerCase();
+  
+  // Filtramos la lista maestra
+  const filtered = allDetectedBones.filter(bone => 
+    bone.toLowerCase().includes(term)
+  );
+  
+  // Re-renderizamos el select solo con las coincidencias
+  renderOptions(selectElement, filtered);
+}
+
+// EVENT LISTENERS PARA LA BÚSQUEDA EN TIEMPO REAL
+headSearchInput.addEventListener('input', () => filterBones(headSearchInput, headSelect));
+neckSearchInput.addEventListener('input', () => filterBones(neckSearchInput, neckSelect));
 
 function autoSelectBone(availableBones, searchTerms, selectElement) {
   const found = availableBones.find(bone => 
