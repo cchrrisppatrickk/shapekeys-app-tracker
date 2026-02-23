@@ -1,11 +1,10 @@
-// 1. IMPORTACIONES DE THREE.JS Y MEDIAPIPE
+// 1. IMPORTACIONES
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { FaceLandmarker, FilesetResolver, DrawingUtils } from "@mediapipe/tasks-vision";
 
 // REFERENCIAS DOM
-const demosSection = document.getElementById("demos");
 const videoBlendShapes = document.getElementById("video-blend-shapes");
 const video = document.getElementById("webcam");
 const canvasElement = document.getElementById("output_canvas");
@@ -13,22 +12,22 @@ const canvasCtx = canvasElement.getContext("2d");
 const enableWebcamButton = document.getElementById("webcamButton");
 const webcamLabel = document.getElementById("webcamLabel");
 
-// ELEMENTOS DEL MODAL Y CONTENEDORES 3D
+// ELEMENTOS DEL MODAL
 const setupModal = document.getElementById('setup-modal');
-const previewContainer = document.getElementById('preview-three-container'); // Contenedor del Modal
-const mainContainer = document.getElementById('three-container');         // Contenedor Principal
+const previewContainer = document.getElementById('preview-three-container');
+const mainContainer = document.getElementById('three-container');
 const confirmBtn = document.getElementById('confirm-mapping-btn');
-const headSelect = document.getElementById('head-bone-select');
-const neckSelect = document.getElementById('neck-bone-select');
-const activeBoneDisplay = document.getElementById('active-bone-display');
 const placeholderText = document.querySelector('.preview-placeholder');
 
-// REFERENCIAS DOM NUEVAS (Inputs de búsqueda)
-const headSearchInput = document.getElementById('head-bone-search');
-const neckSearchInput = document.getElementById('neck-bone-search');
+// INPUTS Y SELECTORES
+const headSelect = document.getElementById('head-bone-select');
+const neckSelect = document.getElementById('neck-bone-select');
+const headSearchInput = document.getElementById('head-bone-search'); // Nuevo input búsqueda
+const neckSearchInput = document.getElementById('neck-bone-search'); // Nuevo input búsqueda
+const activeBoneDisplay = document.getElementById('active-bone-display');
 
-// Variable para guardar TODOS los huesos del modelo actual
-let allDetectedBones = [];
+// REFERENCIAS DOM NUEVAS
+const autoDetectBtn = document.getElementById('auto-detect-btn'); // El nuevo botón
 
 // VARIABLES GLOBALES
 let faceLandmarker;
@@ -41,7 +40,7 @@ let scene, camera, renderer, controls;
 let avatarModel = null;
 let headBone = null;
 let neckBone = null;
-let skeletonHelper = null; // Ayuda visual para ver los huesos en el modal
+let allDetectedBones = []; // Lista maestra para el buscador
 
 // ==========================================
 // 1. INICIALIZACIÓN DE MEDIAPIPE
@@ -68,33 +67,29 @@ createFaceLandmarker();
 // ==========================================
 function initThreeJS() {
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x222222); // Gris oscuro para el modal
+  scene.background = new THREE.Color(0x222222); 
 
-  // Configuración inicial usando el tamaño del PREVIEW CONTAINER (Modal)
   const width = previewContainer.clientWidth;
   const height = previewContainer.clientHeight;
 
   camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-  camera.position.set(0, 1.3, 2.5); // Cámara un poco más cerca para ver la cara
+  camera.position.set(0, 1.3, 2.5);
 
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setSize(width, height);
   renderer.setPixelRatio(window.devicePixelRatio);
   
-  // ¡AQUÍ ESTÁ EL CAMBIO CLAVE! 
-  // Agregamos el canvas al contenedor del MODAL primero.
+  // Renderizar inicialmente en el Modal
   previewContainer.appendChild(renderer.domElement);
 
-  // Luces
   const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
   scene.add(ambientLight);
   const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
   directionalLight.position.set(0, 2, 2);
   scene.add(directionalLight);
 
-  // Controles
   controls = new OrbitControls(camera, renderer.domElement);
-  controls.target.set(0, 1.3, 0); // Apuntar a la altura de la cabeza aprox
+  controls.target.set(0, 1.3, 0);
   controls.enableDamping = true;
   controls.update();
 
@@ -107,9 +102,7 @@ function animate3D() {
   renderer.render(scene, camera);
 }
 
-// Función para manejar el redimensionado de ventana
 window.addEventListener('resize', () => {
-  // Verificamos dónde está el canvas actualmente (Modal o Principal)
   const parent = renderer.domElement.parentNode;
   if (parent) {
     const width = parent.clientWidth;
@@ -120,10 +113,10 @@ window.addEventListener('resize', () => {
   }
 });
 
-initThreeJS(); // Iniciar inmediatamente para ver el fondo en el modal
+initThreeJS();
 
 // ==========================================
-// 3. LOGICA DE CARGA (DRAG & DROP)
+// 3. LOGICA DE CARGA Y BÚSQUEDA
 // ==========================================
 window.addEventListener('dragover', (e) => e.preventDefault());
 
@@ -140,36 +133,23 @@ window.addEventListener('drop', (e) => {
     loader.load(fileURL, (gltf) => {
       // Limpieza previa
       if (avatarModel) scene.remove(avatarModel);
-      if (skeletonHelper) scene.remove(skeletonHelper);
       
       avatarModel = gltf.scene;
       scene.add(avatarModel);
-      
-      // Añadir visualizador de esqueleto (SkeletonHelper)
-      // Esto ayuda al usuario a ver los huesos en el modal
-      skeletonHelper = new THREE.SkeletonHelper(avatarModel);
-      skeletonHelper.visible = true;
-      scene.add(skeletonHelper);
 
       if(placeholderText) placeholderText.style.display = "none";
       console.log(`¡Modelo ${file.name} cargado!`);
 
-      // Extraer huesos para la UI
-      // Extraer huesos para la UI
+      // Extraer huesos
       const detectedBones = [];
       avatarModel.traverse((node) => {
         if (node.isBone) detectedBones.push(node.name);
       });
 
-      // ¡AQUÍ LLAMAMOS A LA NUEVA FUNCIÓN!
+      // Poblar listas y guardar referencia global
       populateBoneSelectors(detectedBones);
 
-      // La auto-selección debe ocurrir DESPUÉS de poblar
-      autoSelectBone(detectedBones, ['head', 'headx', 'c_head', 'mixamorig:head'], headSelect);
-      autoSelectBone(detectedBones, ['neck', 'neckx', 'c_neck', 'mixamorig:neck'], neckSelect);
-      populateBoneSelectors(detectedBones);
-
-      // Intento de auto-detección simple (Fase preliminar)
+      // Auto-detección simple
       autoSelectBone(detectedBones, ['head', 'headx', 'c_head', 'mixamorig:head'], headSelect);
       autoSelectBone(detectedBones, ['neck', 'neckx', 'c_neck', 'mixamorig:neck'], neckSelect);
 
@@ -180,66 +160,52 @@ window.addEventListener('drop', (e) => {
   }
 });
 
-// ==========================================
-// NUEVA LÓGICA DE POBLADO Y FILTRADO
-// ==========================================
-
-// Esta función se llama cuando cargamos el modelo (dentro del loader.load)
+// FUNCIÓN PARA POBLAR SELECTORES (INICIAL)
 function populateBoneSelectors(bonesList) {
-  // 1. Guardamos la lista maestra
-  allDetectedBones = bonesList;
+  allDetectedBones = bonesList; // Guardar copia para filtrar
 
-  // 2. Limpiamos los inputs de búsqueda
-  headSearchInput.value = "";
-  neckSearchInput.value = "";
+  // Limpiar Inputs de búsqueda
+  if(headSearchInput) headSearchInput.value = "";
+  if(neckSearchInput) neckSearchInput.value = "";
 
-  // 3. Renderizamos las opciones completas inicialmente
   renderOptions(headSelect, allDetectedBones);
   renderOptions(neckSelect, allDetectedBones);
 }
 
-// Función auxiliar para renderizar opciones en un select específico
-function renderOptions(selectElement, bones, selectedValue = null) {
-  // Guardar el valor seleccionado actual si no se pasa uno explícito
-  const currentSelection = selectedValue || selectElement.value;
-
+// FUNCIÓN AUXILIAR PARA RENDERIZAR OPCIONES
+function renderOptions(selectElement, bones) {
+  const currentVal = selectElement.value;
   selectElement.innerHTML = '<option value="">-- Selecciona --</option>';
   
   bones.forEach(bone => {
-    const option = new Option(bone, bone);
-    selectElement.add(option);
+    selectElement.add(new Option(bone, bone));
   });
 
-  // Intentar restaurar la selección si aún existe en la lista filtrada
-  if (currentSelection && bones.includes(currentSelection)) {
-    selectElement.value = currentSelection;
+  // Mantener selección si aún existe tras filtrar
+  if (currentVal && bones.includes(currentVal)) {
+    selectElement.value = currentVal;
   }
 }
 
-// Función de filtrado (Event Listener)
+// FUNCIÓN DE FILTRADO (BÚSQUEDA)
 function filterBones(searchInput, selectElement) {
   const term = searchInput.value.toLowerCase();
-  
-  // Filtramos la lista maestra
-  const filtered = allDetectedBones.filter(bone => 
-    bone.toLowerCase().includes(term)
-  );
-  
-  // Re-renderizamos el select solo con las coincidencias
+  const filtered = allDetectedBones.filter(bone => bone.toLowerCase().includes(term));
   renderOptions(selectElement, filtered);
 }
 
-// EVENT LISTENERS PARA LA BÚSQUEDA EN TIEMPO REAL
-headSearchInput.addEventListener('input', () => filterBones(headSearchInput, headSelect));
-neckSearchInput.addEventListener('input', () => filterBones(neckSearchInput, neckSelect));
+// Event Listeners para Búsqueda
+if(headSearchInput) headSearchInput.addEventListener('input', () => filterBones(headSearchInput, headSelect));
+if(neckSearchInput) neckSearchInput.addEventListener('input', () => filterBones(neckSearchInput, neckSelect));
 
+// AUTO-SELECCIÓN SIMPLE
 function autoSelectBone(availableBones, searchTerms, selectElement) {
   const found = availableBones.find(bone => 
     searchTerms.some(term => bone.toLowerCase().includes(term.toLowerCase()))
   );
   if (found) {
     selectElement.value = found;
-    highlightBoneInUI(found); // Activar feedback visual
+    highlightBoneInUI(found);
   }
 }
 
@@ -247,37 +213,27 @@ function autoSelectBone(availableBones, searchTerms, selectElement) {
 // 4. LÓGICA DE INTERACCIÓN Y CONFIRMACIÓN
 // ==========================================
 
-// Feedback Visual: Iluminar hueso seleccionado (Básico)
+// Feedback Visual: SOLO TEXTO (Sin tocar el 3D)
 function highlightBoneInUI(boneName) {
   if (!boneName) {
     activeBoneDisplay.textContent = "Ninguno";
     activeBoneDisplay.className = 'active-bone-none';
     return;
   }
-  
   activeBoneDisplay.textContent = `🦴 ${boneName}`;
   activeBoneDisplay.className = 'active-bone-selected';
-  
-  // Visualizar en el modelo 3D (Si existe el hueso)
-  if (avatarModel) {
-    const bone = avatarModel.getObjectByName(boneName);
-    // Aquí podríamos poner lógica para resaltar el hueso específico en el SkeletonHelper
-    // Por ahora, solo confirmamos que existe
-    if(bone) console.log(`Hueso ${boneName} seleccionado.`);
-  }
 }
 
 headSelect.addEventListener('change', (e) => highlightBoneInUI(e.target.value));
 neckSelect.addEventListener('change', (e) => highlightBoneInUI(e.target.value));
 
-// AL HACER CLIC EN CONFIRMAR
+// CONFIRMAR Y MOVER A ESCENA PRINCIPAL
 confirmBtn.addEventListener('click', () => {
   if (!avatarModel) {
     alert("Arrastra un modelo .glb primero.");
     return;
   }
 
-  // 1. Guardar referencias a los huesos
   const hName = headSelect.value;
   const nName = neckSelect.value;
   
@@ -288,29 +244,23 @@ confirmBtn.addEventListener('click', () => {
     alert("Advertencia: No has seleccionado hueso de cabeza. La rotación no funcionará.");
   }
 
-  // 2. MIGRACIÓN DEL CANVAS: Del Modal al Panel Principal
-  // Esto "mueve" el visor 3D de un div a otro sin recargar
+  // Mover Canvas al contenedor principal
   mainContainer.appendChild(renderer.domElement);
   
-  // Ajustar tamaño al nuevo contenedor
   const newWidth = mainContainer.clientWidth;
   const newHeight = mainContainer.clientHeight;
   renderer.setSize(newWidth, newHeight);
   camera.aspect = newWidth / newHeight;
   camera.updateProjectionMatrix();
 
-  // 3. Limpieza Visual
-  setupModal.style.display = 'none'; // Ocultar modal
-  if(skeletonHelper) skeletonHelper.visible = false; // Ocultar las líneas de huesos para el modo final
-  scene.background = new THREE.Color(0x1e1e1e); // Cambiar color de fondo para que coincida con la app
-
-  // 4. Iniciar automáticamente la cámara (Opcional, mejora UX)
-  // enableCam(); 
+  // Ocultar modal y cambiar fondo
+  setupModal.style.display = 'none'; 
+  scene.background = new THREE.Color(0x1e1e1e);
 });
 
 
 // ==========================================
-// 5. LÓGICA DE RASTREO (Igual que antes)
+// 5. LÓGICA DE RASTREO Y CAMARA
 // ==========================================
 if (hasGetUserMedia()) {
   enableWebcamButton.addEventListener("click", enableCam);
@@ -339,7 +289,6 @@ function enableCam() {
 }
 
 async function predictWebcam() {
-  // Ajuste de canvas de video 2D
   canvasElement.style.width = video.clientWidth + "px";
   canvasElement.style.height = video.clientHeight + "px";
   canvasElement.width = video.videoWidth;
@@ -353,14 +302,12 @@ async function predictWebcam() {
 
   canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
 
-  // Dibujar landmarks 2D
   if (results && results.faceLandmarks) {
     for (const landmarks of results.faceLandmarks) {
       drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_TESSELATION, { color: "#C0C0C070", lineWidth: 1 });
     }
   }
 
-  // Actualizar Modelo 3D
   if (results) {
     if (results.faceBlendshapes && results.faceBlendshapes.length > 0) {
       drawBlendShapes(videoBlendShapes, results.faceBlendshapes);
@@ -376,7 +323,7 @@ async function predictWebcam() {
   }
 }
 
-// Blendshapes Mapping (Tu diccionario original)
+// Blendshapes Mapping
 const blendshapeMap = {
   eyeBlinkLeft: "Eye_Blink_L", eyeLookDownLeft: "Eye_L_Look_Down", eyeLookInLeft: "Eye_L_Look_R", eyeLookOutLeft: "Eye_L_Look_L", eyeLookUpLeft: "Eye_L_Look_Up", eyeSquintLeft: "Eye_Squint_L", eyeWideLeft: "Eye_Wide_L", eyeBlinkRight: "Eye_Blink_R", eyeLookDownRight: "Eye_R_Look_Down", eyeLookInRight: "Eye_R_Look_L", eyeLookOutRight: "Eye_R_Look_R", eyeLookUpRight: "Eye_R_Look_Up", eyeSquintRight: "Eye_Squint_R", eyeWideRight: "Eye_Wide_R", jawForward: "Jaw_Forward", jawLeft: "Jaw_L", jawRight: "Jaw_R", jawOpen: "Jaw_Open", mouthClose: "Mouth_Close", mouthFunnel: "Mouth_Funnel", mouthPucker: "Mouth_Pucker", mouthLeft: "Mouth_L", mouthRight: "Mouth_R", mouthSmileLeft: "Mouth_Smile_L", mouthSmileRight: "Mouth_Smile_R", mouthFrownLeft: "Mouth_Frown_L", mouthFrownRight: "Mouth_Frown_R", mouthDimpleLeft: "Mouth_Dimple_L", mouthDimpleRight: "Mouth_Dimple_R", mouthStretchLeft: "Mouth_Stretch_L", mouthStretchRight: "Mouth_Stretch_R", mouthRollLower: "Mouth_Roll_In_Lower", mouthRollUpper: "Mouth_Roll_In_Upper", mouthShrugLower: "Mouth_Shrug_Lower", mouthShrugUpper: "Mouth_Shrug_Upper", mouthPressLeft: "Mouth_Press_L", mouthPressRight: "Mouth_Press_R", mouthLowerDownLeft: "Mouth_Down_Lower_L", mouthLowerDownRight: "Mouth_Down_Lower_R", mouthUpperUpLeft: "Mouth_Up_Upper_L", mouthUpperUpRight: "Mouth_Up_Upper_R", browDownLeft: "Brow_Drop_L", browDownRight: "Brow_Drop_R", browInnerUp: "Brow_Raise_Inner_L", browOuterUpLeft: "Brow_Raise_Outer_L", browOuterUpRight: "Brow_Raise_Outer_R", cheekPuff: "Cheek_Puff_L", cheekSquintLeft: "Cheek_Raise_L", cheekSquintRight: "Cheek_Raise_R", noseSneerLeft: "Nose_Sneer_L", noseSneerRight: "Nose_Sneer_R"
 };
@@ -402,13 +349,11 @@ function applyHeadPoseToModel(matrixData) {
   const matrix = new THREE.Matrix4().fromArray(matrixData);
   const rotation = new THREE.Euler().setFromRotationMatrix(matrix);
   
-  // Mapeo simple de ejes (Puede requerir ajuste según el modelo)
   headBone.rotation.x = rotation.x;
   headBone.rotation.y = -rotation.y;
   headBone.rotation.z = -rotation.z;
 }
 
-// UI Auxiliar
 function drawBlendShapes(el, blendShapes) {
   if (!blendShapes || !blendShapes.length) return;
   let htmlMaker = "";
@@ -422,3 +367,77 @@ function drawBlendShapes(el, blendShapes) {
   });
   if(el) el.innerHTML = htmlMaker;
 }
+
+
+// ==========================================
+// MOTOR DE DETECCIÓN AUTOMÁTICA (Smart Auto-Assign)
+// ==========================================
+
+// Diccionario de Patrones (Regex) ordenados por prioridad/popularidad
+const RIG_PATTERNS = {
+  head: [
+    /c_headx/i,           // Auto-Rig Pro (Control)
+    /headx/i,             // Auto-Rig Pro (Deform)
+    /mixamorig:Head/i,    // Mixamo
+    /DEF-spine\.006/i,    // Rigify (Mecanismo común)
+    /DEF-head/i,          // Rigify
+    /^head$/i,            // Genérico Exacto
+    /head/i               // Genérico Parcial
+  ],
+  neck: [
+    /c_neckx/i,           // Auto-Rig Pro (Control)
+    /neckx/i,             // Auto-Rig Pro (Deform)
+    /mixamorig:Neck/i,    // Mixamo
+    /DEF-spine\.004/i,    // Rigify (Cuello base)
+    /DEF-neck/i,          // Rigify
+    /^neck$/i,            // Genérico Exacto
+    /neck/i               // Genérico Parcial
+  ]
+};
+
+// Función Core: Busca la mejor coincidencia en la lista de huesos
+function findBestMatch(availableBones, regexList) {
+  // Iteramos sobre los patrones en orden de prioridad
+  for (const pattern of regexList) {
+    const match = availableBones.find(bone => pattern.test(bone));
+    if (match) return match; // Devolvemos la primera coincidencia encontrada
+  }
+  return null; // Nada encontrado
+}
+
+// Lógica del Botón
+autoDetectBtn.addEventListener('click', () => {
+  if (allDetectedBones.length === 0) {
+    alert("¡Primero carga un modelo!");
+    return;
+  }
+
+  console.log("Iniciando auto-detección...");
+  
+  // 1. Buscar Cabeza
+  const foundHead = findBestMatch(allDetectedBones, RIG_PATTERNS.head);
+  if (foundHead) {
+    headSelect.value = foundHead;
+    highlightBoneInUI(foundHead); // Feedback visual
+    console.log(`Auto-Detect: Cabeza encontrada -> ${foundHead}`);
+  }
+
+  // 2. Buscar Cuello
+  const foundNeck = findBestMatch(allDetectedBones, RIG_PATTERNS.neck);
+  if (foundNeck) {
+    neckSelect.value = foundNeck;
+    // Si encontramos ambos, resaltamos la cabeza en UI (o el último encontrado)
+    highlightBoneInUI(foundNeck); 
+    console.log(`Auto-Detect: Cuello encontrado -> ${foundNeck}`);
+  }
+
+  // 3. Feedback al usuario
+  if (foundHead || foundNeck) {
+    // Pequeño parpadeo verde en el botón o alert suave
+    const originalText = autoDetectBtn.innerText;
+    autoDetectBtn.innerText = "¡HUESOS ENCONTRADOS! ✅";
+    setTimeout(() => autoDetectBtn.innerText = originalText, 2000);
+  } else {
+    alert("No se pudieron detectar huesos conocidos automáticamente. Por favor, selecciona manualmente.");
+  }
+});

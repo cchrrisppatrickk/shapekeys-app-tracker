@@ -236,3 +236,20 @@ video {
   border-top: 1px solid #333; /* Separación sutil */
   margin-top: 0; /* Pegado al input */
 }
+
+/* Estilos para la barra de Auto-Detección */
+.auto-detect-bar {
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #333;
+}
+
+.full-width-btn {
+  width: 100%;
+  border-color: #00bcd4 !important;
+  color: #00bcd4 !important;
+}
+
+.full-width-btn:hover {
+  background-color: rgba(0, 188, 212, 0.05) !important;
+}
