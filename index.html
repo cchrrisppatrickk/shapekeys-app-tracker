@@ -3,96 +3,91 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Face Tracker & 3D Viewer - Fase 2</title>
+  <title>Face Tracker - Cyberpunk Edition</title>
   <link href="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.css" rel="stylesheet">
   <link rel="stylesheet" href="./src/style.css">
 </head>
 <body>
+
   <div id="setup-modal" class="modal-overlay">
     <div class="modal-content">
-
-
-      
-
       
       <div class="modal-header">
-        <h2>Asignación de Esqueleto</h2>
+        <h2>SYSTEM CONFIGURATION // <span class="subtitle">SKELETON MAPPING</span></h2>
         <button id="confirm-mapping-btn" class="mdc-button mdc-button--raised confirm-btn">
           <span class="mdc-button__ripple"></span>
-          <span class="mdc-button__label">CONFIRMAR Y EMPEZAR</span>
+          <span class="mdc-button__label">INITIATE SYSTEM</span>
         </button>
       </div>
 
-      
-
       <div class="modal-body">
         <div class="modal-left" id="preview-three-container">
-          <div class="preview-placeholder">Visor 3D de Huesos (Cargando...)</div>
+          <div class="preview-placeholder">
+            <div class="loader-spinner"></div>
+            <p>AWAITING MODEL INPUT...</p>
+          </div>
         </div>
 
         <div class="modal-right">
-          <h3>Mapeo de Huesos Clave</h3>
-          <p class="help-text">Verifica o asigna manualmente los huesos que controlarán la rotación.</p>
+          
+          <h3>AUTO-DIAGNOSTICS</h3>
+          <div class="auto-detect-bar">
+            <button id="auto-detect-btn" class="mdc-button mdc-button--outlined full-width-btn">
+              <span class="mdc-button__ripple"></span>
+              <span class="mdc-button__label">✨ RUN SMART SCAN</span>
+            </button>
+          </div>
+
+          <h3>MANUAL OVERRIDE</h3>
+          <p class="help-text">Verify neural links to bone structure.</p>
 
           <div class="mapping-form">
             <div class="form-group">
-              <label for="head-bone-select" class="bone-label">Hueso de la Cabeza (Head):</label>
-              <input type="text" id="head-bone-search" class="bone-search-input" placeholder="🔍 Buscar hueso (ej. head)..." autocomplete="off">
+              <label for="head-bone-select" class="bone-label">CRANIAL LINK (Head):</label>
+              <input type="text" id="head-bone-search" class="bone-search-input" placeholder=">> Search bone ID..." autocomplete="off">
               <select id="head-bone-select" class="bone-select">
-                <option value="">-- Selecciona un hueso --</option>
+                <option value="">-- NO SIGNAL --</option>
               </select>
             </div>
 
             <div class="form-group">
-              <label for="neck-bone-select" class="bone-label">Hueso del Cuello (Neck):</label>
-              <input type="text" id="neck-bone-search" class="bone-search-input" placeholder="🔍 Buscar hueso (ej. neck)..." autocomplete="off">
+              <label for="neck-bone-select" class="bone-label">CERVICAL LINK (Neck):</label>
+              <input type="text" id="neck-bone-search" class="bone-search-input" placeholder=">> Search bone ID..." autocomplete="off">
               <select id="neck-bone-select" class="bone-select">
-                <option value="">-- Selecciona un hueso --</option>
+                <option value="">-- NO SIGNAL --</option>
               </select>
             </div>
           </div>
-          
 
           <div class="feedback-panel">
-            <h4>Hueso Resaltado en Visor:</h4>
-            <div id="active-bone-display" class="active-bone-none">Ninguno</div>
+            <h4>TARGET LOCKED:</h4>
+            <div id="active-bone-display" class="active-bone-none">WAITING...</div>
           </div>
 
         </div>
       </div>
-    <h3>Mapeo de Huesos Clave</h3>
-
-<div class="auto-detect-bar">
-  <button id="auto-detect-btn" class="mdc-button mdc-button--outlined full-width-btn">
-    <span class="mdc-button__ripple"></span>
-    <span class="mdc-button__label">✨ DETECTAR HUESOS AUTOMÁTICAMENTE</span>
-  </button>
-</div>
-
-<p class="help-text">Verifica o asigna manualmente los huesos...</p>
       
     </div>
   </div>
   
   <div class="app-container">
     
-    <div class="left-panel" id="three-container">
-      </div>
+    <div class="left-panel" id="three-container"></div>
 
     <div class="right-panel">
-      <h2>Detección en Tiempo Real</h2>
-      <button id="webcamButton" class="mdc-button mdc-button--raised">
+      <h2>NEURAL TRACKING</h2>
+      <button id="webcamButton" class="mdc-button mdc-button--raised action-btn">
         <span class="mdc-button__ripple"></span>
-        <span class="mdc-button__label" id="webcamLabel">HABILITAR CÁMARA</span>
+        <span class="mdc-button__label" id="webcamLabel">ACTIVATE OPTIC SENSOR</span>
       </button>
 
       <div class="video-section">
         <video id="webcam" autoplay playsinline></video>
         <canvas class="output_canvas" id="output_canvas"></canvas>
-      </div>
+        <div class="scan-line"></div> </div>
 
       <div class="data-section">
-        <h3>Valores ARKit</h3>
+        <h3>TELEMETRY (ARKit)</h3>
         <ul class="blend-shapes-list" id="video-blend-shapes"></ul>
       </div>
     </div>
