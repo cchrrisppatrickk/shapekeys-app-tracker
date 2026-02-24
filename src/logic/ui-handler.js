@@ -2,6 +2,7 @@
 // MANEJADOR DE UI (DOM y eventos del modal)
 // ==========================================
 import { RIG_PATTERNS } from './constants.js';
+import { deleteTake, togglePlayback, setActiveTake } from './recorder.js';
 
 // Variables de estado internas
 let allDetectedBones = [];
@@ -11,6 +12,86 @@ let uiElements = {};
 export function initUI(elements) {
     uiElements = elements;
     attachEventListeners();
+}
+
+// === NUEVO: Actualizar Cronómetro ===
+export function updateTimerDisplay(timeString) {
+    if (uiElements.timerDisplay) uiElements.timerDisplay.innerText = timeString;
+}
+
+export function setTimerActive(isActive) {
+    if (uiElements.timerDisplay) {
+        if (isActive) uiElements.timerDisplay.classList.add('active');
+        else uiElements.timerDisplay.classList.remove('active');
+    }
+}
+
+// === NUEVO: Renderizar Lista de Clips ===
+export function renderClipsList(takes, activeId) {
+    const listContainer = uiElements.clipsList;
+    if (!listContainer) return;
+    
+    // Actualizar contador
+    if (uiElements.takesCount) uiElements.takesCount.innerText = takes.length;
+    
+    // Habilitar/Deshabilitar botón de exportar
+    if (uiElements.exportButton) {
+        uiElements.exportButton.disabled = takes.length === 0 || !activeId;
+    }
+
+    // Limpiar lista
+    listContainer.innerHTML = '';
+
+    if (takes.length === 0) {
+        listContainer.innerHTML = '<li class="empty-state">No hay grabaciones aún.</li>';
+        return;
+    }
+
+    // Generar items
+    takes.forEach(take => {
+        const li = document.createElement('li');
+        li.className = `clip-item ${take.id === activeId ? 'selected' : ''}`;
+        
+        // Al hacer click en la fila, seleccionamos la toma
+        li.onclick = (e) => {
+            if (e.target.closest('button')) return; // Evitar conflicto con botones
+            setActiveTake(take.id);
+            renderClipsList(takes, take.id); 
+        };
+
+        li.innerHTML = `
+            <div class="clip-info">
+                <span class="clip-name">${take.name}</span>
+                <span class="clip-meta">Duración: ${take.duration.toFixed(2)}s • ${take.timestamp}</span>
+            </div>
+            <div class="clip-actions">
+                <button class="icon-btn play" title="Reproducir">
+                    <i class="material-icons">play_arrow</i>
+                </button>
+                <button class="icon-btn delete" title="Eliminar">
+                    <i class="material-icons">delete</i>
+                </button>
+            </div>
+        `;
+
+        // Eventos de botones
+        const btnPlay = li.querySelector('.play');
+        const btnDelete = li.querySelector('.delete');
+
+        btnPlay.onclick = (e) => {
+            e.stopPropagation();
+            togglePlayback(take.id);
+        };
+        
+        btnDelete.onclick = (e) => {
+            e.stopPropagation();
+            if(confirm('¿Borrar esta toma?')) {
+                deleteTake(take.id);
+            }
+        };
+
+        listContainer.appendChild(li);
+    });
 }
 
 // Poblar los selectores con la lista de huesos detectados
@@ -61,23 +142,18 @@ function findBestMatch(availableBones, regexList) {
 
 // Adjuntar todos los listeners de eventos
 function attachEventListeners() {
-    // Filtros de búsqueda
     if (uiElements.headSearchInput) {
         uiElements.headSearchInput.addEventListener('input', () => filterBones(uiElements.headSearchInput, uiElements.headSelect));
     }
     if (uiElements.neckSearchInput) {
         uiElements.neckSearchInput.addEventListener('input', () => filterBones(uiElements.neckSearchInput, uiElements.neckSelect));
     }
-
-    // Resaltar selección
     if (uiElements.headSelect) {
         uiElements.headSelect.addEventListener('change', (e) => highlightBoneInUI(e.target.value));
     }
     if (uiElements.neckSelect) {
         uiElements.neckSelect.addEventListener('change', (e) => highlightBoneInUI(e.target.value));
     }
-
-    // Auto-detección
     if (uiElements.autoDetectBtn) {
         uiElements.autoDetectBtn.addEventListener('click', () => {
             if (allDetectedBones.length === 0) {

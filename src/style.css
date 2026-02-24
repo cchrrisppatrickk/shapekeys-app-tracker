@@ -313,3 +313,145 @@ video {
   70% { box-shadow: 0 0 0 10px rgba(255, 59, 48, 0); }
   100% { box-shadow: 0 0 0 0 rgba(255, 59, 48, 0); }
 }
+
+/* =========================================
+   NUEVO: CRONÓMETRO Y CLIPS
+   ========================================= */
+
+/* Cronómetro Digital */
+.timer-display {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #444; /* Apagado por defecto */
+    background: rgba(0,0,0,0.3);
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid #333;
+    transition: color 0.3s;
+}
+
+.timer-display.active {
+    color: var(--color-accent); /* Rojo al grabar */
+    border-color: var(--color-accent);
+    text-shadow: 0 0 8px rgba(255, 59, 48, 0.4);
+}
+
+/* Sección de Clips */
+.clips-section {
+    padding: 15px 20px;
+    background-color: var(--color-dominant);
+    border-bottom: 1px solid var(--color-border);
+    flex: 1; /* Ocupa buen espacio */
+    display: flex;
+    flex-direction: column;
+    min-height: 200px;
+}
+
+.section-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.section-title h3 {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+}
+
+.badge {
+    background: #333;
+    color: white;
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 10px;
+}
+
+/* Lista de Clips */
+.clips-container-scroll {
+    flex: 1;
+    overflow-y: auto;
+    border: 1px solid #222;
+    background-color: rgba(0,0,0,0.2);
+    border-radius: 6px;
+    margin-bottom: 10px;
+}
+
+.clips-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.empty-state {
+    padding: 20px;
+    text-align: center;
+    color: #555;
+    font-style: italic;
+    font-size: 0.9rem;
+}
+
+/* Item Individual (Tarjeta de Toma) */
+.clip-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid #222;
+    background-color: #1a1a1a;
+    transition: background 0.2s;
+    cursor: pointer;
+}
+
+.clip-item:hover {
+    background-color: #252525;
+}
+
+.clip-item.selected {
+    background-color: #2a2a2a;
+    border-left: 3px solid var(--color-accent);
+}
+
+.clip-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.clip-name {
+    font-weight: 500;
+    color: white;
+    font-size: 0.9rem;
+}
+
+.clip-meta {
+    font-size: 0.75rem;
+    color: #777;
+    margin-top: 2px;
+}
+
+.clip-actions {
+    display: flex;
+    gap: 5px;
+}
+
+/* Botones pequeños dentro del clip */
+.icon-btn {
+    background: none;
+    border: none;
+    color: #666;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: color 0.2s, background 0.2s;
+}
+
+.icon-btn:hover { color: white; background: #333; }
+.icon-btn.play:hover { color: #4cd964; } /* Verde para play */
+.icon-btn.delete:hover { color: #ff3b30; } /* Rojo para borrar */
+
+.export-area {
+    margin-top: auto;
+}

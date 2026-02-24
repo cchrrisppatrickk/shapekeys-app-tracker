@@ -13,6 +13,7 @@
 </head>
 <body>
   
+  <!-- MODAL DE CONFIGURACIÓN INICIAL -->
   <div id="setup-modal" class="modal-overlay">
     <div class="modal-content">
       
@@ -26,10 +27,12 @@
 
       <div class="modal-body">
         
+        <!-- VISTA PREVIA 3D -->
         <div class="modal-left" id="preview-three-container">
           <div class="preview-placeholder">Arrastra tu modelo .glb aquí</div>
         </div>
 
+        <!-- PANEL DE CONFIGURACIÓN -->
         <div class="modal-right">
           
           <div class="control-header">
@@ -78,117 +81,76 @@
     </div>
   </div>
   
+  <!-- APLICACIÓN PRINCIPAL -->
   <div class="app-container">
     
-    <div class="left-panel" id="three-container">
-      </div>
+    <!-- PANEL IZQUIERDO: VISOR 3D (se moverá aquí tras la configuración) -->
+    <div class="left-panel" id="three-container"></div>
 
+    <!-- PANEL DERECHO: CONTROLES -->
     <div class="right-panel">
       
+      <!-- SECCIÓN SUPERIOR: CÁMARA Y CRONÓMETRO -->
       <div class="top-section">
         <div class="panel-header">
           <h2>Panel de Control</h2>
+          <div id="recording-timer" class="timer-display">00:00.00</div>
         </div>
 
         <div class="video-wrapper">
           <div class="video-section">
             <div id="recording-indicator" class="hidden rec-dot"></div>
-            
             <video id="webcam" autoplay playsinline></video>
-            <canvas class="output_canvas" id="output_canvas"></canvas>
+            <canvas id="output_canvas" class="output_canvas"></canvas>
           </div>
           
           <div class="cam-controls">
-             <button id="webcamButton" class="mdc-button mdc-button--raised accent-btn" style="flex: 1;">
+            <button id="webcamButton" class="mdc-button mdc-button--raised accent-btn" style="flex: 1;">
               <span class="mdc-button__ripple"></span>
-              <span class="mdc-button__label" id="webcamLabel">CÁMARA</span>
+              <i class="material-icons mdc-button__icon" aria-hidden="true">videocam</i>
+              <span class="mdc-button__label">CÁMARA</span>
             </button>
 
             <button id="recordButton" class="mdc-button mdc-button--raised record-btn" style="flex: 1;" disabled>
               <span class="mdc-button__ripple"></span>
               <i class="material-icons mdc-button__icon" aria-hidden="true">fiber_manual_record</i>
-              <span class="mdc-button__label" id="recordLabel">REC</span>
+              <span class="mdc-button__label">REC</span>
             </button>
           </div>
         </div>
+      </div>
 
+      <!-- SECCIÓN DE TOMAS GRABADAS (CLIPS) -->
+      <div class="clips-section">
+        <div class="section-title">
+          <h3>Tomas Grabadas (Takes)</h3>
+          <span id="takes-count" class="badge">0</span>
+        </div>
+        <div class="clips-container-scroll">
+          <ul id="clips-list" class="clips-list">
+            <li class="empty-state">No hay grabaciones aún.</li>
+          </ul>
+        </div>
+        
+        <div class="export-area">
+          <button id="exportButton" class="mdc-button mdc-button--outlined full-width-btn" disabled>
+            <span class="mdc-button__ripple"></span>
+            <i class="material-icons mdc-button__icon">download</i>
+            <span class="mdc-button__label">EXPORTAR SELECCIÓN (.GLB)</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- SECCIÓN INFERIOR: MONITOR DE BLENDSHAPES -->
       <div class="bottom-section">
-        <h3>Datos de Rastreo</h3>
+        <h3>Monitor de Blendshapes</h3>
         <div class="data-scroll-area">
           <ul class="blend-shapes-list" id="video-blend-shapes"></ul>
         </div>
       </div>
 
-    </div>
-
-    
-
-  </div>
-
-  <div class="top-section">
-        <div class="panel-header">
-          <h2>Panel de Control</h2>
-        </div>
-
-        <div class="video-wrapper">
-          <div class="video-section">
-            <div id="recording-indicator" class="hidden rec-dot"></div>
-            <video id="webcam" autoplay playsinline></video>
-            <canvas class="output_canvas" id="output_canvas"></canvas>
-          </div>
-          
-          <div class="cam-controls">
-             <button id="webcamButton" class="mdc-button mdc-button--raised accent-btn" style="flex: 1;">
-              <span class="mdc-button__ripple"></span>
-              <span class="mdc-button__icon material-icons" aria-hidden="true">videocam</span>
-            </button>
-
-            <button id="recordButton" class="mdc-button mdc-button--raised record-btn" style="flex: 1;" disabled>
-              <span class="mdc-button__ripple"></span>
-              <span class="mdc-button__icon material-icons" aria-hidden="true">fiber_manual_record</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div class="playback-controls">
-        <button id="playButton" class="mdc-button mdc-button--outlined full-width-btn" disabled>
-          <span class="mdc-button__ripple"></span>
-          <span class="mdc-button__icon material-icons" id="playIcon">play_arrow</span>
-          <span class="mdc-button__label" id="playLabel">REVISAR GRABACIÓN</span>
-        </button>
-
-        <button id="exportButton" class="mdc-button mdc-button--outlined full-width-btn" disabled style="margin-top: 10px; border-color: #444; color: #888;">
-          <span class="mdc-button__ripple"></span>
-          <span class="mdc-button__icon material-icons">download</span>
-          <span class="mdc-button__label">EXPORTAR .GLB (Fase 3)</span>
-        </button>
-      </div>
-
-      <div class="bottom-section">
-        ```
-
-### 2. CSS (`src/style.css`)
-
-Añadimos estilos para la nueva sección de playback.
-
-```css
-/* ... (Estilos anteriores) ... */
-
-/* Nueva sección de controles de reproducción */
-.playback-controls {
-  padding: 15px 20px;
-  background-color: var(--color-secondary);
-  border-bottom: 1px solid var(--color-border);
-}
-
-/* Estado activo del botón Play */
-.playing {
-  background-color: rgba(0, 188, 212, 0.1) !important;
-  border-color: #00bcd4 !important;
-  color: #00bcd4 !important;
-}
-  
+    </div> <!-- Fin right-panel -->
+  </div> <!-- Fin app-container -->
 
   <script type="module" src="./src/main.js"></script>
 </body>

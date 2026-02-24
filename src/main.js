@@ -23,12 +23,18 @@ const dom = {
     canvasElement: document.getElementById("output_canvas"),
     enableWebcamButton: document.getElementById("webcamButton"),
     recordButton: document.getElementById("recordButton"),
-    playButton: document.getElementById("playButton"),
-    playLabel: document.getElementById("playLabel"),
-    playIcon: document.getElementById("playIcon"),
+    
+    // --- ELEMENTOS VIEJOS ELIMINADOS (PlayButton simple) ---
+    // playButton: document.getElementById("playButton"), 
+    
+    // --- NUEVOS ELEMENTOS DE UI ---
+    timerDisplay: document.getElementById("recording-timer"),
+    clipsList: document.getElementById("clips-list"),
+    takesCount: document.getElementById("takes-count"),
     exportButton: document.getElementById("exportButton"),
+    // -----------------------------
 
-    // Modal de Configuración
+    // Modal de Configuración (igual que antes)
     setupModal: document.getElementById('setup-modal'),
     previewContainer: document.getElementById('preview-three-container'),
     mainContainer: document.getElementById('three-container'),
@@ -114,16 +120,37 @@ function initThreeJS() {
     scene.add(fillLight);
 
     // Controles
-    controls = new OrbitControls(camera, renderer.domElement);
-    controls.listenToKeyEvents(window);
-    controls.target.set(0, 1.35, 0);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.05;
-    controls.enablePan = true;
-    controls.screenSpacePanning = false;
-    controls.minDistance = 0.5;
-    controls.maxDistance = 5;
-    controls.update();
+    // Reemplaza la configuración actual de OrbitControls por esta:
+controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 1.35, 0);
+
+// Habilita el damping (inercia) para movimientos más suaves
+controls.enableDamping = true;
+controls.dampingFactor = 0.08; // Un valor más alto = más suavizado (0.01 es muy sensible, 0.1 es bastante lento)
+
+// Ajusta la velocidad de rotación y desplazamiento
+controls.rotateSpeed = 0.8;      // Disminuye si la rotación es demasiado rápida
+controls.panSpeed = 0.8;          // Controla la velocidad del movimiento con clic derecho
+
+// Configuración de zoom
+controls.enableZoom = true;
+controls.zoomSpeed = 1.0;
+
+// Asegura que el clic derecho sea para panear (ya es el comportamiento por defecto)
+controls.mouseButtons = {
+    LEFT: THREE.MOUSE.ROTATE,
+    MIDDLE: THREE.MOUSE.DOLLY,
+    RIGHT: THREE.MOUSE.PAN
+};
+
+// Límites para evitar que la cámara se aleje o acerque demasiado
+controls.minDistance = 0.5;
+controls.maxDistance = 5.0;
+
+// Opcional: restringir ángulos de rotación (por ejemplo, para no ver debajo del suelo)
+controls.maxPolarAngle = Math.PI; // Limita a 90 grados hacia abajo
+
+controls.update();
 
     animate3D();
 
@@ -149,6 +176,7 @@ function onWindowResize() {
 
 // Inicializar manejadores de UI
 function initUIHandlers() {
+    // Pasar las nuevas referencias a UI
     UI.initUI({
         videoBlendShapes: dom.videoBlendShapes,
         headSelect: dom.headSelect,
@@ -156,20 +184,35 @@ function initUIHandlers() {
         headSearchInput: dom.headSearchInput,
         neckSearchInput: dom.neckSearchInput,
         activeBoneDisplay: dom.activeBoneDisplay,
-        autoDetectBtn: dom.autoDetectBtn
+        autoDetectBtn: dom.autoDetectBtn,
+        
+        // Nuevas referencias conectadas:
+        timerDisplay: dom.timerDisplay,
+        clipsList: dom.clipsList,
+        takesCount: dom.takesCount,
+        exportButton: dom.exportButton
     });
 
     Recorder.initRecorderUI({
         onRecordStateChange: (isRecording, hasData) => {
             dom.recordButton.classList.toggle("recording", isRecording);
-            dom.playButton.disabled = isRecording || !hasData;
-            dom.exportButton.disabled = isRecording || !hasData;
+            
+            // Texto del botón REC
+            const label = dom.recordButton.querySelector('.mdc-button__label');
+            if(label) label.innerText = isRecording ? "PARAR" : "REC";
+            
+            // Activar visualmente el timer
+            UI.setTimerActive(isRecording);
         },
         onPlayStateChange: (isPlaying) => {
-            dom.playLabel.innerText = isPlaying ? "DETENER" : "REVISAR GRABACIÓN";
-            if (dom.playIcon) dom.playIcon.innerText = isPlaying ? "stop" : "play_arrow";
-            dom.playButton.classList.toggle("playing", isPlaying);
+            // Deshabilitar REC mientras se reproduce una toma
             dom.recordButton.disabled = isPlaying;
+        },
+        onTimerUpdate: (timeString) => {
+            UI.updateTimerDisplay(timeString);
+        },
+        onTakesUpdated: (takes, activeId) => {
+            UI.renderClipsList(takes, activeId);
         }
     });
 }
@@ -185,14 +228,19 @@ function initEventListeners() {
     // Webcam
     dom.enableWebcamButton.addEventListener("click", toggleWebcam);
 
-    // Grabación y Reproducción
+    // Grabación (El Play se maneja desde la lista ahora)
     dom.recordButton.addEventListener("click", toggleRecording);
-    dom.playButton.addEventListener("click", togglePlayback);
-
+    
     // Confirmación del modal
     dom.confirmBtn.addEventListener('click', confirmMapping);
+    
+    // Exportar (funcionalidad placeholder hasta el próximo paso)
+    if(dom.exportButton) {
+        dom.exportButton.addEventListener('click', () => {
+            alert("Módulo de exportación pendiente en el siguiente paso.");
+        });
+    }
 }
-
 // Manejar carga de modelo por drag & drop
 function handleDrop(e) {
     e.preventDefault();
