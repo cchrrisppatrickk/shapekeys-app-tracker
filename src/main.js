@@ -12,6 +12,7 @@ import { LIGHT_CONFIG } from './logic/constants.js';
 import * as Avatar from './logic/avatar-control.js';
 import * as Recorder from './logic/recorder.js';
 import * as UI from './logic/ui-handler.js';
+import { exportTakeToGLB } from './logic/exporter.js';
 
 // ==========================================
 // 1. REFERENCIAS DOM
@@ -235,11 +236,38 @@ function initEventListeners() {
     dom.confirmBtn.addEventListener('click', confirmMapping);
     
     // Exportar (funcionalidad placeholder hasta el próximo paso)
-    if(dom.exportButton) {
-        dom.exportButton.addEventListener('click', () => {
-            alert("Módulo de exportación pendiente en el siguiente paso.");
-        });
-    }
+    if (dom.exportButton) {
+    dom.exportButton.addEventListener("click", () => {
+        // 1. Verificar qué toma está activa
+        const takeId = Recorder.activeTakeId;
+        const take = Recorder.allTakes.find(t => t.id === takeId);
+        
+        if (!take) {
+            alert("Selecciona una toma de la lista para exportar.");
+            return;
+        }
+
+        // 2. Bloquear botón visualmente (feedback)
+        const originalText = dom.exportButton.querySelector('.mdc-button__label').innerText;
+        dom.exportButton.disabled = true;
+        dom.exportButton.querySelector('.mdc-button__label').innerText = "PROCESANDO...";
+
+        // 3. Ejecutar exportación
+        // Necesitamos pasarle el modelo y el hueso actual para que sepa qué empaquetar
+        try {
+            exportTakeToGLB(take, Avatar.avatarModel, Avatar.headBone);
+        } catch (e) {
+            console.error(e);
+            alert("Error crítico al exportar.");
+        } finally {
+            // Restaurar botón (un pequeño delay para que se sienta el proceso)
+            setTimeout(() => {
+                dom.exportButton.disabled = false;
+                dom.exportButton.querySelector('.mdc-button__label').innerText = originalText;
+            }, 1000);
+        }
+    });
+}
 }
 // Manejar carga de modelo por drag & drop
 function handleDrop(e) {
