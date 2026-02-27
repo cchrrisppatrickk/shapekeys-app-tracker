@@ -97,21 +97,43 @@
           <div id="recording-timer" class="timer-display">00:00.00</div>
         </div>
 
+        <div class="input-source-tabs">
+          <button id="tab-webcam" class="source-tab active">
+            <i class="material-icons">videocam</i> Webcam
+          </button>
+          <button id="tab-video" class="source-tab">
+            <i class="material-icons">movie</i> Archivo
+          </button>
+        </div>
+
         <div class="video-wrapper">
-          <div class="video-section">
+          <div class="video-section" id="drop-zone-video">
             <div id="recording-indicator" class="hidden rec-dot"></div>
-            <video id="webcam" autoplay playsinline></video>
+            
+            <div id="video-overlay-msg" class="hidden video-overlay">
+              <i class="material-icons">upload_file</i>
+              <span>Arrastra tu video aquí</span>
+            </div>
+
+            <video id="webcam" playsinline></video>
             <canvas id="output_canvas" class="output_canvas"></canvas>
           </div>
           
           <div class="cam-controls">
-            <button id="webcamButton" class="mdc-button mdc-button--raised accent-btn" style="flex: 1;">
+            <button id="webcamButton" class="mdc-button mdc-button--raised accent-btn action-btn">
               <span class="mdc-button__ripple"></span>
               <i class="material-icons mdc-button__icon" aria-hidden="true">videocam</i>
               <span class="mdc-button__label">CÁMARA</span>
             </button>
 
-            <button id="recordButton" class="mdc-button mdc-button--raised record-btn" style="flex: 1;" disabled>
+            <input type="file" id="videoFileInput" accept="video/mp4, video/webm, video/quicktime" style="display: none;">
+            <button id="uploadVideoButton" class="hidden mdc-button mdc-button--raised action-btn" style="background-color: #555;">
+              <span class="mdc-button__ripple"></span>
+              <i class="material-icons mdc-button__icon" aria-hidden="true">folder_open</i>
+              <span class="mdc-button__label">CARGAR</span>
+            </button>
+
+            <button id="recordButton" class="mdc-button mdc-button--raised record-btn" disabled>
               <span class="mdc-button__ripple"></span>
               <i class="material-icons mdc-button__icon" aria-hidden="true">fiber_manual_record</i>
               <span class="mdc-button__label">REC</span>

@@ -455,3 +455,106 @@ video {
 .export-area {
     margin-top: auto;
 }
+
+/* =========================================
+   NUEVO: PESTAÑAS DE FUENTE (WEBCAM / VIDEO)
+   ========================================= */
+.input-source-tabs {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 15px;
+  background-color: #111;
+  padding: 4px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+}
+
+.source-tab {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  padding: 8px 0;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.source-tab i {
+  font-size: 1.1rem;
+}
+
+.source-tab:hover {
+  color: white;
+  background-color: rgba(255,255,255,0.05);
+}
+
+.source-tab.active {
+  background-color: var(--color-secondary);
+  color: var(--color-accent);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
+
+/* =========================================
+   ESTILOS DINÁMICOS PARA CONTROLES Y VIDEO
+   ========================================= */
+.hidden {
+  display: none !important;
+}
+
+.action-btn {
+  flex: 1;
+}
+
+.record-btn {
+  flex: 1;
+}
+
+/* Separamos el transform de 'video' base. 
+  Solo aplicamos efecto espejo cuando es webcam. 
+*/
+video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Eliminamos el transform: rotateY(180deg) de aquí */
+}
+
+/* Clase para aplicar el modo espejo dinámicamente */
+.mirrored {
+  transform: rotateY(180deg);
+}
+
+/* Mensaje overlay para arrastrar video */
+.video-overlay {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: #777;
+  z-index: 5;
+  border: 2px dashed #444;
+  border-radius: var(--radius-std);
+  box-sizing: border-box;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.video-overlay.dragover {
+  border-color: var(--color-accent);
+  color: white;
+  background-color: rgba(255, 59, 48, 0.1);
+}
+
+.video-overlay i {
+  font-size: 2rem;
+  margin-bottom: 5px;
+}
