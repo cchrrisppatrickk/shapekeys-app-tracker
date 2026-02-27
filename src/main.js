@@ -46,7 +46,16 @@ const dom = {
     headSearchInput: document.getElementById('head-bone-search'),
     neckSearchInput: document.getElementById('neck-bone-search'),
     activeBoneDisplay: document.getElementById('active-bone-display'),
-    autoDetectBtn: document.getElementById('auto-detect-btn')
+    autoDetectBtn: document.getElementById('auto-detect-btn'),
+
+    // --- NUEVAS REFERENCIAS PARA MODO VIDEO ---
+    tabWebcam: document.getElementById("tab-webcam"),
+    tabVideo: document.getElementById("tab-video"),
+    dropZoneVideo: document.getElementById("drop-zone-video"),
+    videoOverlayMsg: document.getElementById("video-overlay-msg"),
+    videoFileInput: document.getElementById("videoFileInput"),
+    uploadVideoButton: document.getElementById("uploadVideoButton"),
+    // ------------------------------------------
 };
 
 // ==========================================
@@ -54,6 +63,8 @@ const dom = {
 // ==========================================
 let faceLandmarker;
 let webcamRunning = false;
+let videoTrackingActive = false; // NUEVO: Para saber si estamos trackeando un video local
+let currentMode = 'webcam';      // NUEVO: 'webcam' o 'video'
 let lastVideoTime = -1;
 let results = undefined;
 
@@ -225,6 +236,32 @@ function initEventListeners() {
     // Drag & Drop
     window.addEventListener('dragover', (e) => e.preventDefault());
     window.addEventListener('drop', handleDrop);
+
+    // --- NUEVO: PESTAÑAS (TABS) ---
+    dom.tabWebcam.addEventListener("click", () => switchInputMode('webcam'));
+    dom.tabVideo.addEventListener("click", () => switchInputMode('video'));
+
+    // --- NUEVO: UPLOAD & DRAG & DROP DE VIDEO ---
+    dom.uploadVideoButton.addEventListener("click", () => dom.videoFileInput.click());
+    dom.videoFileInput.addEventListener("change", (e) => handleVideoFile(e.target.files[0]));
+
+    dom.dropZoneVideo.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        if (currentMode === 'video') dom.videoOverlayMsg.classList.add("dragover");
+    });
+    
+    dom.dropZoneVideo.addEventListener("dragleave", (e) => {
+        e.preventDefault();
+        dom.videoOverlayMsg.classList.remove("dragover");
+    });
+    
+    dom.dropZoneVideo.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dom.videoOverlayMsg.classList.remove("dragover");
+        if (currentMode === 'video' && e.dataTransfer.files.length > 0) {
+            handleVideoFile(e.dataTransfer.files[0]);
+        }
+    });
 
     // Webcam
     dom.enableWebcamButton.addEventListener("click", toggleWebcam);
@@ -402,9 +439,11 @@ async function predictWebcam() {
         if (Recorder.isRecording && hasBlendshapes && hasMatrices) {
             Recorder.captureFrame(results);
         }
+
+        
     }
 
-    if (webcamRunning) {
+    if (webcamRunning || videoTrackingActive) {
         window.requestAnimationFrame(predictWebcam);
     }
 }
@@ -427,6 +466,79 @@ function togglePlayback() {
         Recorder.startPlayback();
     }
 }
+
+// --- NUEVO: Cambiar entre Webcam y Archivo de Video ---
+function switchInputMode(mode) {
+    if (mode === currentMode) return;
+    currentMode = mode;
+
+    // Detener lo que esté sonando/grabando
+    if (webcamRunning) toggleWebcam(); 
+    if (videoTrackingActive) {
+        videoTrackingActive = false;
+        dom.video.pause();
+        dom.video.src = ""; // Limpiar video local
+    }
+    if (Recorder.isRecording) Recorder.stopRecording();
+
+    // Resetear UI
+    dom.recordButton.disabled = true;
+
+    if (mode === 'video') {
+        dom.tabWebcam.classList.remove("active");
+        dom.tabVideo.classList.add("active");
+        
+        dom.enableWebcamButton.classList.add("hidden");
+        dom.uploadVideoButton.classList.remove("hidden");
+        dom.videoOverlayMsg.classList.remove("hidden");
+        
+        // Quitar modo espejo para videos
+        dom.video.classList.remove("mirrored");
+        dom.canvasElement.classList.remove("mirrored");
+    } else {
+        dom.tabVideo.classList.remove("active");
+        dom.tabWebcam.classList.add("active");
+        
+        dom.uploadVideoButton.classList.add("hidden");
+        dom.enableWebcamButton.classList.remove("hidden");
+        dom.videoOverlayMsg.classList.add("hidden");
+        
+        // Activar modo espejo para webcam
+        dom.video.classList.add("mirrored");
+        dom.canvasElement.classList.add("mirrored");
+    }
+    
+    // Limpiar canvas
+    canvasCtx.clearRect(0, 0, dom.canvasElement.width, dom.canvasElement.height);
+}
+
+// --- NUEVO: Procesar archivo de video cargado ---
+function handleVideoFile(file) {
+    if (!file || !file.type.startsWith('video/')) {
+        alert('Por favor, sube un archivo de video válido (.mp4, .webm).');
+        return;
+    }
+
+    // Ocultar overlay
+    dom.videoOverlayMsg.classList.add("hidden");
+
+    // Crear URL temporal para el video
+    const fileURL = URL.createObjectURL(file);
+    dom.video.srcObject = null; // Desvincular webcam si estuviera
+    dom.video.src = fileURL;
+    dom.video.loop = true; // Que el video se repita
+    dom.video.muted = true; // Evitar problemas de autoplay con sonido
+
+    dom.video.onloadeddata = () => {
+        dom.video.play();
+        videoTrackingActive = true;
+        dom.recordButton.disabled = false;
+        
+        // Iniciar el bucle de predicción
+        predictWebcam();
+    };
+}
+
 
 // ==========================================
 // 7. INICIAR TODO
