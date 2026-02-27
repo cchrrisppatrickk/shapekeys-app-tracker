@@ -15,6 +15,8 @@ import * as UI from './logic/ui-handler.js';
 import * as MediaManager from './logic/media-manager.js'; // NUEVO MÓDULO
 import { exportTakeToGLB } from './logic/exporter.js';
 
+import Stats from 'three/addons/libs/stats.module.js';
+
 // ==========================================
 // 1. REFERENCIAS DOM
 // ==========================================
@@ -58,7 +60,7 @@ let results = undefined;
 
 const canvasCtx = dom.canvasElement.getContext("2d");
 const drawingUtils = new DrawingUtils(canvasCtx);
-let scene, camera, renderer, controls;
+let scene, camera, renderer, controls, stats;
 
 // ==========================================
 // 3. INICIALIZACIÓN
@@ -123,6 +125,20 @@ function initThreeJS() {
     controls.maxPolarAngle = Math.PI;
     controls.update();
 
+    // NUEVO: Inicializar Stats (Monitor de FPS)
+    stats = new Stats();
+    // Lo posicionamos absoluto para que no rompa tu maquetación
+    stats.dom.style.position = 'absolute';
+    stats.dom.style.top = '10px';
+    stats.dom.style.left = '10px';
+    // Lo añadimos al contenedor principal (o al document.body)
+    dom.mainContainer.appendChild(stats.dom); 
+
+    // Optimización 1: Limitar el Pixel Ratio
+    // Los monitores modernos (MacBooks, móviles) tienen Pixel Ratio de 2 o 3. 
+    // Renderizar a esa escala mata el rendimiento. Lo limitamos a máximo 2.
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
     animate3D();
     window.addEventListener('resize', onWindowResize);
 }
@@ -131,6 +147,8 @@ function animate3D() {
     requestAnimationFrame(animate3D);
     if (controls) controls.update();
     renderer.render(scene, camera);
+    
+    if (stats) stats.update(); // NUEVO: Actualizar el contador de FPS
 }
 
 function onWindowResize() {

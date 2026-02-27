@@ -98,8 +98,9 @@ export function toggleWebcam() {
         webcamRunning = true;
         dom.enableWebcamButton.classList.add("accent-btn");
 
-        const constraints = { video: { width: 1280, height: 720 } };
-        navigator.mediaDevices.getUserMedia(constraints).then((stream) => {
+        // OPTIMIZACIÓN 3: Bajar de 1280x720 a 640x480
+        const constraints = { video: { width: 640, height: 480 } }; 
+        navigator.mediaDevices.getUserMedia(constraints).then((stream) =>{
             dom.video.removeAttribute('src'); // Asegurarnos de limpiar archivos previos
             dom.video.srcObject = stream;
             
