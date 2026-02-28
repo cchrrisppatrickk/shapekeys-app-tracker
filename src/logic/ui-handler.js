@@ -147,7 +147,7 @@ function findBestMatch(availableBones, regexList) {
 
 // Adjuntar todos los listeners de eventos
 function attachEventListeners() {
-    // Escuchar el botón de Auto-Detectar
+    // 1. Escuchar el botón de Auto-Detectar (NUEVA VERSIÓN ÚNICA)
     if (uiElements.autoDetectBtn) {
         uiElements.autoDetectBtn.addEventListener('click', () => {
             if (allDetectedBones.length === 0) {
@@ -156,19 +156,15 @@ function attachEventListeners() {
             }
 
             let foundCount = 0;
-            // Buscar TODOS los <select> que tengan la clase 'bone-select'
             const allSelects = document.querySelectorAll('.bone-select');
 
             allSelects.forEach(select => {
-                // Obtener qué hueso busca este select (ej: 'head', 'hips', 'armL')
                 const boneKey = select.id.replace('-bone-select', ''); 
-                // Alternativa usando el dataset: const boneKey = select.dataset.boneKey; (Si lo agregaste al HTML)
 
-                // Si existe un patrón de RegEx para esta llave
                 if (RIG_PATTERNS[boneKey]) {
                     const bestMatch = findBestMatch(allDetectedBones, RIG_PATTERNS[boneKey]);
                     if (bestMatch) {
-                        select.value = bestMatch; // Auto-seleccionar
+                        select.value = bestMatch; 
                         foundCount++;
                     }
                 }
@@ -183,6 +179,8 @@ function attachEventListeners() {
             }
         });
     }
+
+    // 2. Escuchar buscadores y selectores de Rostro/Cuello (Si aún se usan)
     if (uiElements.headSearchInput) {
         uiElements.headSearchInput.addEventListener('input', () => filterBones(uiElements.headSearchInput, uiElements.headSelect));
     }
@@ -195,33 +193,7 @@ function attachEventListeners() {
     if (uiElements.neckSelect) {
         uiElements.neckSelect.addEventListener('change', (e) => highlightBoneInUI(e.target.value));
     }
-    if (uiElements.autoDetectBtn) {
-        uiElements.autoDetectBtn.addEventListener('click', () => {
-            if (allDetectedBones.length === 0) {
-                alert("¡Primero carga un modelo!");
-                return;
-            }
-            const foundHead = findBestMatch(allDetectedBones, RIG_PATTERNS.head);
-            if (foundHead && uiElements.headSelect) {
-                uiElements.headSelect.value = foundHead;
-                highlightBoneInUI(foundHead);
-            }
-            const foundNeck = findBestMatch(allDetectedBones, RIG_PATTERNS.neck);
-            if (foundNeck && uiElements.neckSelect) {
-                uiElements.neckSelect.value = foundNeck;
-                highlightBoneInUI(foundNeck);
-            }
-            if (foundHead || foundNeck) {
-                const originalText = uiElements.autoDetectBtn.innerHTML;
-                uiElements.autoDetectBtn.innerHTML = `<span class="mdc-button__label">¡ENCONTRADO! ✅</span>`;
-                setTimeout(() => uiElements.autoDetectBtn.innerHTML = originalText, 2000);
-            } else {
-                alert("No se detectaron nombres estándar. Selecciona manualmente.");
-            }
-        });
-    }
 }
-
 // Dibujar la lista de blendshapes en el panel de la interfaz
 export function drawBlendShapes(categories) {
     if (!uiElements.videoBlendShapes || !categories) return;

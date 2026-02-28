@@ -5,15 +5,16 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { FaceLandmarker, FilesetResolver, DrawingUtils } from "@mediapipe/tasks-vision";
 
 // Importar módulos de lógica
 import { LIGHT_CONFIG } from './logic/constants.js';
 import * as Avatar from './logic/avatar-control.js';
 import * as Recorder from './logic/recorder.js';
 import * as UI from './logic/ui-handler.js';
-import * as MediaManager from './logic/media-manager.js'; // NUEVO MÓDULO
+import * as MediaManager from './logic/media-manager.js';
 import { exportTakeToGLB } from './logic/exporter.js';
+
+import { FaceLandmarker, PoseLandmarker, FilesetResolver, DrawingUtils } from "@mediapipe/tasks-vision";
 
 import Stats from 'three/addons/libs/stats.module.js';
 
@@ -56,6 +57,8 @@ const dom = {
 // ==========================================
 // 2. VARIABLES GLOBALES
 // ==========================================
+let poseLandmarker;
+
 let faceLandmarker;
 let lastVideoTime = -1;
 let results = undefined;
@@ -117,16 +120,18 @@ let scene, camera, renderer, controls, stats;
 // 3. INICIALIZACIÓN
 // ==========================================
 async function init() {
-    await createFaceLandmarker();
+    await createLandmarkers();
     initThreeJS();
     initUIHandlers();
     initEventListeners();
 }
 
-async function createFaceLandmarker() {
+async function createLandmarkers() {
     const filesetResolver = await FilesetResolver.forVisionTasks(
         "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
     );
+    
+    // 1. Iniciar Modelo Facial
     faceLandmarker = await FaceLandmarker.createFromOptions(filesetResolver, {
         baseOptions: {
             modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
@@ -136,6 +141,17 @@ async function createFaceLandmarker() {
         outputFacialTransformationMatrixes: true,
         runningMode: "VIDEO",
         numFaces: 1
+    });
+
+    // 2. Iniciar Modelo Corporal (Pose)
+    poseLandmarker = await PoseLandmarker.createFromOptions(filesetResolver, {
+        baseOptions: {
+            // Usamos la versión 'full' para buen balance entre precisión y rendimiento
+            modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task",
+            delegate: "GPU"
+        },
+        runningMode: "VIDEO",
+        numPoses: 1
     });
 }
 
@@ -325,36 +341,65 @@ async function predictWebcam() {
     dom.canvasElement.height = dom.video.videoHeight;
 
     let startTimeMs = performance.now();
+    let faceResults = null;
+    let poseResults = null;
+
+    // CONDICIONAL: Solo procesar los modelos seleccionados
     if (lastVideoTime !== dom.video.currentTime) {
         lastVideoTime = dom.video.currentTime;
-        results = faceLandmarker.detectForVideo(dom.video, startTimeMs);
+        
+        if (currentTrackingMode === 'face' || currentTrackingMode === 'full') {
+            faceResults = faceLandmarker.detectForVideo(dom.video, startTimeMs);
+        }
+        
+        if (currentTrackingMode === 'body' || currentTrackingMode === 'full') {
+            poseResults = poseLandmarker.detectForVideo(dom.video, startTimeMs);
+        }
     }
 
     canvasCtx.clearRect(0, 0, dom.canvasElement.width, dom.canvasElement.height);
-    if (results && results.faceLandmarks) {
-        for (const landmarks of results.faceLandmarks) {
-            drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_TESSELATION, { color: "#C0C0C040", lineWidth: 1 });
+
+    if (!Recorder.isPlaying) {
+        
+        // --- 1. PROCESAR ROSTRO ---
+        if (faceResults && faceResults.faceLandmarks) {
+            // Dibujar malla (Opcional, puedes comentarlo para más FPS)
+            for (const landmarks of faceResults.faceLandmarks) {
+                drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_TESSELATION, { color: "#C0C0C040", lineWidth: 1 });
+            }
+
+            const hasBlendshapes = faceResults.faceBlendshapes && faceResults.faceBlendshapes.length > 0;
+            const hasMatrices = faceResults.facialTransformationMatrixes && faceResults.facialTransformationMatrixes.length > 0;
+
+            if (hasBlendshapes) {
+                const categories = faceResults.faceBlendshapes[0].categories;
+                Avatar.updateModelMorphs(categories);
+                UI.drawBlendShapes(categories); // UI
+            }
+            if (hasMatrices) {
+                Avatar.applyHeadPoseToModel(faceResults.facialTransformationMatrixes[0].data);
+            }
+        }
+
+        // --- 2. PROCESAR CUERPO ---
+        if (poseResults && poseResults.landmarks) {
+            // Dibujar esqueleto 2D de MediaPipe
+            for (const landmark of poseResults.landmarks) {
+                drawingUtils.drawConnectors(landmark, PoseLandmarker.POSE_CONNECTIONS, { color: "#FF3B30", lineWidth: 2 });
+                drawingUtils.drawLandmarks(landmark, { color: "#FFFFFF", lineWidth: 1, radius: 2 });
+            }
+            
+            // TODO: Avatar.applyBodyPoseToModel(poseResults); (Lo haremos en el próximo paso)
+        }
+
+        // --- 3. GRABACIÓN ---
+        if (Recorder.isRecording) {
+            // Guardamos el frame empacando ambos resultados
+            Recorder.captureFrame({ face: faceResults, pose: poseResults });
         }
     }
 
-    if (!Recorder.isPlaying && results) {
-        const hasBlendshapes = results.faceBlendshapes && results.faceBlendshapes.length > 0;
-        const hasMatrices = results.facialTransformationMatrixes && results.facialTransformationMatrixes.length > 0;
-
-        if (hasBlendshapes) {
-            const categories = results.faceBlendshapes[0].categories;
-            Avatar.updateModelMorphs(categories);
-            UI.drawBlendShapes(categories);
-        }
-        if (hasMatrices) {
-            Avatar.applyHeadPoseToModel(results.facialTransformationMatrixes[0].data);
-        }
-        if (Recorder.isRecording && hasBlendshapes && hasMatrices) {
-            Recorder.captureFrame(results);
-        }
-    }
-
-    // Leemos el estado del nuevo módulo para saber si debemos continuar el loop
+    // Continuar el bucle si hay medio activo
     if (MediaManager.webcamRunning || MediaManager.videoTrackingActive) {
         window.requestAnimationFrame(predictWebcam);
     }
