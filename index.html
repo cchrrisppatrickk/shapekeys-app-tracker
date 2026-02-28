@@ -93,24 +93,42 @@
               </div>
             </div>
 
+
             <div id="panel-body-config" class="hidden config-panel">
-              <h4 class="panel-subtitle">Huesos Corporales Principales</h4>
-              <div class="form-group">
-                <label class="bone-label">Cadera (Hips)</label>
-                <div class="input-group">
-                  <select id="hips-bone-select" class="bone-select"><option value="">-- Selecciona --</option></select>
+              <h4 class="panel-subtitle">Torso</h4>
+              <div style="display: flex; gap: 10px;">
+                <div class="form-group" style="flex: 1;">
+                  <label class="bone-label">Cadera (Hips)</label>
+                  <select id="hips-bone-select" class="bone-select" data-bone-key="hips"></select>
+                </div>
+                <div class="form-group" style="flex: 1;">
+                  <label class="bone-label">Columna (Spine 1)</label>
+                  <select id="spine-bone-select" class="bone-select" data-bone-key="spine"></select>
                 </div>
               </div>
-              <div class="form-group">
-                <label class="bone-label">Columna (Spine)</label>
-                <div class="input-group">
-                  <select id="spine-bone-select" class="bone-select"><option value="">-- Selecciona --</option></select>
-                </div>
+
+              <h4 class="panel-subtitle">Brazos (Izq / Der)</h4>
+              <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <select id="armL-bone-select" class="bone-select" data-bone-key="armL" style="flex: 1;"></select>
+                <select id="armR-bone-select" class="bone-select" data-bone-key="armR" style="flex: 1;"></select>
               </div>
-              <div class="help-text" style="margin-top: 10px; font-size: 0.8rem; color: var(--color-accent);">
-                *Más huesos se añadirán en la lógica corporal.
+              <div style="display: flex; gap: 10px;">
+                <select id="forearmL-bone-select" class="bone-select" data-bone-key="forearmL" style="flex: 1;"></select>
+                <select id="forearmR-bone-select" class="bone-select" data-bone-key="forearmR" style="flex: 1;"></select>
+              </div>
+
+              <h4 class="panel-subtitle">Piernas (Izq / Der)</h4>
+              <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <select id="thighL-bone-select" class="bone-select" data-bone-key="thighL" style="flex: 1;"></select>
+                <select id="thighR-bone-select" class="bone-select" data-bone-key="thighR" style="flex: 1;"></select>
+              </div>
+              <div style="display: flex; gap: 10px;">
+                <select id="legL-bone-select" class="bone-select" data-bone-key="legL" style="flex: 1;"></select>
+                <select id="legR-bone-select" class="bone-select" data-bone-key="legR" style="flex: 1;"></select>
               </div>
             </div>
+
+          
 
           </div>
         </div>

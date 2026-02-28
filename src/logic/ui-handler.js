@@ -101,6 +101,11 @@ export function populateBoneSelectors(bonesList) {
     if (uiElements.neckSearchInput) uiElements.neckSearchInput.value = "";
     renderOptions(uiElements.headSelect, allDetectedBones);
     renderOptions(uiElements.neckSelect, allDetectedBones);
+
+    const allSelects = document.querySelectorAll('.bone-select');
+    allSelects.forEach(select => {
+        renderOptions(select, allDetectedBones);
+    });
 }
 
 // Renderizar opciones en un elemento select
@@ -142,6 +147,42 @@ function findBestMatch(availableBones, regexList) {
 
 // Adjuntar todos los listeners de eventos
 function attachEventListeners() {
+    // Escuchar el botón de Auto-Detectar
+    if (uiElements.autoDetectBtn) {
+        uiElements.autoDetectBtn.addEventListener('click', () => {
+            if (allDetectedBones.length === 0) {
+                alert("¡Primero carga un modelo!");
+                return;
+            }
+
+            let foundCount = 0;
+            // Buscar TODOS los <select> que tengan la clase 'bone-select'
+            const allSelects = document.querySelectorAll('.bone-select');
+
+            allSelects.forEach(select => {
+                // Obtener qué hueso busca este select (ej: 'head', 'hips', 'armL')
+                const boneKey = select.id.replace('-bone-select', ''); 
+                // Alternativa usando el dataset: const boneKey = select.dataset.boneKey; (Si lo agregaste al HTML)
+
+                // Si existe un patrón de RegEx para esta llave
+                if (RIG_PATTERNS[boneKey]) {
+                    const bestMatch = findBestMatch(allDetectedBones, RIG_PATTERNS[boneKey]);
+                    if (bestMatch) {
+                        select.value = bestMatch; // Auto-seleccionar
+                        foundCount++;
+                    }
+                }
+            });
+
+            if (foundCount > 0) {
+                const originalText = uiElements.autoDetectBtn.innerHTML;
+                uiElements.autoDetectBtn.innerHTML = `<span class="mdc-button__label">¡${foundCount} ENCONTRADOS! ✅</span>`;
+                setTimeout(() => uiElements.autoDetectBtn.innerHTML = originalText, 2500);
+            } else {
+                alert("No se detectaron nombres estándar para ningún hueso.");
+            }
+        });
+    }
     if (uiElements.headSearchInput) {
         uiElements.headSearchInput.addEventListener('input', () => filterBones(uiElements.headSearchInput, uiElements.headSelect));
     }

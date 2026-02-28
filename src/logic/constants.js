@@ -24,11 +24,36 @@ export const blendshapeMap = {
 };
 
 // Patrones de expresiones regulares para auto-detección de huesos
+// Patrones de expresiones regulares para auto-detección de huesos
 export const RIG_PATTERNS = {
-  head: [/c_headx/i, /headx/i, /mixamorig:Head/i, /DEF-spine\.006/i, /DEF-head/i, /^head$/i, /head/i],
-  neck: [/c_neckx/i, /neckx/i, /mixamorig:Neck/i, /DEF-spine\.004/i, /DEF-neck/i, /^neck$/i, /neck/i]
-};
+  // --- ROSTRO Y CUELLO ---
+  head: [/c_headx/i, /headx/i, /mixamorig:Head/i, /DEF-head/i, /^head$/i],
+  neck: [/c_neckx/i, /neckx/i, /mixamorig:Neck/i, /DEF-neck/i, /^neck$/i],
+  
+  // --- TORSO ---
+  hips: [/c_rootx/i, /rootx/i, /mixamorig:Hips/i, /DEF-hips/i, /^hips$/i, /pelvis/i],
+  spine: [/c_spine_01x/i, /spine_01x/i, /mixamorig:Spine$/i, /DEF-spine$/i, /^spine$/i],
+  chest: [/c_spine_02x/i, /spine_02x/i, /mixamorig:Spine1/i, /chest/i],
+  upperChest: [/c_spine_03x/i, /spine_03x/i, /mixamorig:Spine2/i, /upper_chest/i],
 
+  // --- BRAZOS ---
+  shoulderL: [/c_shoulderl/i, /shoulderl/i, /mixamorig:LeftShoulder/i, /shoulder\.L/i],
+  shoulderR: [/c_shoulderr/i, /shoulderr/i, /mixamorig:RightShoulder/i, /shoulder\.R/i],
+  armL: [/c_arm_fkl/i, /arm_fkl/i, /arml/i, /mixamorig:LeftArm/i, /upper_arm\.L/i],
+  armR: [/c_arm_fkr/i, /arm_fkr/i, /armr/i, /mixamorig:RightArm/i, /upper_arm\.R/i],
+  forearmL: [/c_forearm_fkl/i, /forearm_fkl/i, /forearml/i, /mixamorig:LeftForeArm/i, /forearm\.L/i],
+  forearmR: [/c_forearm_fkr/i, /forearm_fkr/i, /forearmr/i, /mixamorig:RightForeArm/i, /forearm\.R/i],
+  handL: [/c_hand_fkl/i, /handl/i, /mixamorig:LeftHand/i, /hand\.L/i],
+  handR: [/c_hand_fkr/i, /handr/i, /mixamorig:RightHand/i, /hand\.R/i],
+
+  // --- PIERNAS ---
+  thighL: [/c_thigh_fkl/i, /thigh_fkl/i, /thighl/i, /mixamorig:LeftUpLeg/i, /thigh\.L/i],
+  thighR: [/c_thigh_fkr/i, /thigh_fkr/i, /thighr/i, /mixamorig:RightUpLeg/i, /thigh\.R/i],
+  legL: [/c_leg_fkl/i, /leg_fkl/i, /legl/i, /mixamorig:LeftLeg/i, /shin\.L/i],
+  legR: [/c_leg_fkr/i, /leg_fkr/i, /legr/i, /mixamorig:RightLeg/i, /shin\.R/i],
+  footL: [/c_foot_fkl/i, /footl/i, /mixamorig:LeftFoot/i, /foot\.L/i],
+  footR: [/c_foot_fkr/i, /footr/i, /mixamorig:RightFoot/i, /foot\.R/i]
+};
 // Configuración de luces de Three.js (opcional, para centralizar)
 export const LIGHT_CONFIG = {
   ambient: { color: 0xffffff, intensity: 0.8 },
