@@ -558,3 +558,85 @@ video {
   font-size: 2rem;
   margin-bottom: 5px;
 }
+
+/* =========================================
+   NUEVO: WIZARD Y CARTILLAS DE MODO
+   ========================================= */
+.wizard-step {
+  width: 100%;
+  height: 100%;
+  transition: opacity 0.3s ease;
+}
+
+.hidden-step {
+  display: none !important;
+}
+
+.mode-cards-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 30px;
+  height: 100%;
+  padding: 40px;
+  background-color: var(--color-dominant);
+}
+
+.mode-card {
+  background-color: var(--color-secondary);
+  border: 2px solid var(--color-border);
+  border-radius: 12px;
+  padding: 40px 20px;
+  width: 250px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+}
+
+.mode-card i {
+  font-size: 3rem;
+  color: var(--color-text-muted);
+  transition: color 0.2s;
+}
+
+.mode-card h3 {
+  margin: 0;
+  color: var(--color-text-main);
+}
+
+.mode-card p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
+
+.mode-card:hover {
+  transform: translateY(-5px);
+  border-color: #555;
+}
+
+/* Estado Activo de la Cartilla */
+.mode-card.selected {
+  border-color: var(--color-accent);
+  background-color: rgba(255, 59, 48, 0.05);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+}
+
+.mode-card.selected i {
+  color: var(--color-accent);
+}
+
+.panel-subtitle {
+  color: var(--color-accent);
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 5px;
+  margin-top: 20px;
+  margin-bottom: 15px;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+}

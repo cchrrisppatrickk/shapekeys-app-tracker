@@ -49,6 +49,8 @@ const dom = {
     videoOverlayMsg: document.getElementById("video-overlay-msg"),
     videoFileInput: document.getElementById("videoFileInput"),
     uploadVideoButton: document.getElementById("uploadVideoButton")
+
+    
 };
 
 // ==========================================
@@ -57,6 +59,55 @@ const dom = {
 let faceLandmarker;
 let lastVideoTime = -1;
 let results = undefined;
+// Variables de estado
+let currentTrackingMode = null; // 'face', 'body', o 'full'
+
+// Referencias DOM
+const modeCards = document.querySelectorAll('.mode-card');
+const step1 = document.getElementById('wizard-step-1');
+const step2 = document.getElementById('wizard-step-2');
+const btnBack = document.getElementById('btn-back-step');
+const btnConfirm = document.getElementById('confirm-mapping-btn');
+const modalTitle = document.getElementById('modal-title');
+
+const panelFace = document.getElementById('panel-face-config');
+const panelBody = document.getElementById('panel-body-config');
+
+// Lógica de las cartillas
+modeCards.forEach(card => {
+    card.addEventListener('click', () => {
+        // Remover selección previa
+        modeCards.forEach(c => c.classList.remove('selected'));
+        // Seleccionar actual
+        card.classList.add('selected');
+        currentTrackingMode = card.getAttribute('data-mode');
+        
+        // Pasar al paso 2
+        goToStep2();
+    });
+});
+
+function goToStep2() {
+    step1.classList.add('hidden-step');
+    step2.classList.remove('hidden-step');
+    btnBack.classList.remove('hidden');
+    btnConfirm.classList.remove('hidden');
+    modalTitle.innerText = "Configura tu Avatar";
+
+    // Mostrar paneles según el modo
+    panelFace.classList.toggle('hidden', currentTrackingMode === 'body');
+    panelBody.classList.toggle('hidden', currentTrackingMode === 'face');
+}
+
+btnBack.addEventListener('click', () => {
+    step2.classList.add('hidden-step');
+    step1.classList.remove('hidden-step');
+    btnBack.classList.add('hidden');
+    btnConfirm.classList.add('hidden');
+    modalTitle.innerText = "¿Qué deseas capturar hoy?";
+    currentTrackingMode = null;
+    modeCards.forEach(c => c.classList.remove('selected'));
+});
 
 const canvasCtx = dom.canvasElement.getContext("2d");
 const drawingUtils = new DrawingUtils(canvasCtx);

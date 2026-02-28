@@ -15,71 +15,110 @@
   
   <!-- MODAL DE CONFIGURACIÓN INICIAL -->
   <div id="setup-modal" class="modal-overlay">
-    <div class="modal-content">
+  <div class="modal-content">
+    
+    <div class="modal-header">
+      <button id="btn-back-step" class="hidden mdc-button mdc-button--outlined" style="color: white; border-color: #555;">
+        <i class="material-icons mdc-button__icon">arrow_back</i> Volver
+      </button>
+      <h2 id="modal-title">¿Qué deseas capturar hoy?</h2>
+      <button id="confirm-mapping-btn" class="hidden mdc-button mdc-button--raised confirm-btn">
+        <span class="mdc-button__ripple"></span>
+        <span class="mdc-button__label">CONFIRMAR Y EMPEZAR</span>
+      </button>
+    </div>
+
+    <div class="modal-body">
       
-      <div class="modal-header">
-        <h2>Asignación de Esqueleto</h2>
-        <button id="confirm-mapping-btn" class="mdc-button mdc-button--raised confirm-btn">
-          <span class="mdc-button__ripple"></span>
-          <span class="mdc-button__label">CONFIRMAR Y EMPEZAR</span>
-        </button>
+      <div id="wizard-step-1" class="wizard-step active-step">
+        <div class="mode-cards-container">
+          
+          <div class="mode-card" data-mode="face">
+            <i class="material-icons">face</i>
+            <h3>Face Tracking</h3>
+            <p>Captura de expresiones faciales y rotación de cabeza (52 Blendshapes).</p>
+          </div>
+
+          <div class="mode-card" data-mode="body">
+            <i class="material-icons">accessibility_new</i>
+            <h3>Body Tracking</h3>
+            <p>Captura de movimiento corporal completo (Pose Estimation).</p>
+          </div>
+
+          <div class="mode-card" data-mode="full">
+            <i class="material-icons">recent_actors</i>
+            <h3>Face + Body</h3>
+            <p>Captura simultánea de rostro, expresiones y cuerpo completo.</p>
+          </div>
+
+        </div>
       </div>
 
-      <div class="modal-body">
+      <div id="wizard-step-2" class="wizard-step hidden-step" style="display: flex; width: 100%;">
         
-        <!-- VISTA PREVIA 3D -->
         <div class="modal-left" id="preview-three-container">
           <div class="preview-placeholder">Arrastra tu modelo .glb aquí</div>
         </div>
 
-        <!-- PANEL DE CONFIGURACIÓN -->
         <div class="modal-right">
           
           <div class="control-header">
             <h3>Configuración del Rig</h3>
-            <p class="help-text">Arrastra un archivo .glb y configura los huesos.</p>
+            <p class="help-text">Arrastra un archivo .glb y configura los huesos necesarios.</p>
           </div>
 
           <div class="auto-detect-bar">
             <button id="auto-detect-btn" class="mdc-button mdc-button--outlined full-width-btn">
               <span class="mdc-button__ripple"></span>
               <i class="material-icons mdc-button__icon" aria-hidden="true">auto_fix_high</i>
-              <span class="mdc-button__label">AUTO-DETECTAR</span>
+              <span class="mdc-button__label">AUTO-DETECTAR HUESOS</span>
             </button>
           </div>
 
           <div class="mapping-form">
-            <div class="form-group">
-              <label for="head-bone-select" class="bone-label">Hueso de la Cabeza (Head)</label>
-              <div class="input-group">
-                <input type="text" id="head-bone-search" class="bone-search-input" placeholder="Filtrar..." autocomplete="off">
-                <select id="head-bone-select" class="bone-select">
-                  <option value="">-- Selecciona --</option>
-                </select>
+            
+            <div id="panel-face-config" class="hidden config-panel">
+              <h4 class="panel-subtitle">Huesos Faciales</h4>
+              <div class="form-group">
+                <label class="bone-label">Hueso de la Cabeza (Head)</label>
+                <div class="input-group">
+                  <select id="head-bone-select" class="bone-select"><option value="">-- Selecciona --</option></select>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="bone-label">Hueso del Cuello (Neck)</label>
+                <div class="input-group">
+                  <select id="neck-bone-select" class="bone-select"><option value="">-- Selecciona --</option></select>
+                </div>
               </div>
             </div>
 
-            <div class="form-group">
-              <label for="neck-bone-select" class="bone-label">Hueso del Cuello (Neck)</label>
-              <div class="input-group">
-                <input type="text" id="neck-bone-search" class="bone-search-input" placeholder="Filtrar..." autocomplete="off">
-                <select id="neck-bone-select" class="bone-select">
-                  <option value="">-- Selecciona --</option>
-                </select>
+            <div id="panel-body-config" class="hidden config-panel">
+              <h4 class="panel-subtitle">Huesos Corporales Principales</h4>
+              <div class="form-group">
+                <label class="bone-label">Cadera (Hips)</label>
+                <div class="input-group">
+                  <select id="hips-bone-select" class="bone-select"><option value="">-- Selecciona --</option></select>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="bone-label">Columna (Spine)</label>
+                <div class="input-group">
+                  <select id="spine-bone-select" class="bone-select"><option value="">-- Selecciona --</option></select>
+                </div>
+              </div>
+              <div class="help-text" style="margin-top: 10px; font-size: 0.8rem; color: var(--color-accent);">
+                *Más huesos se añadirán en la lógica corporal.
               </div>
             </div>
-          </div>
 
-          <div class="feedback-panel">
-            <h4>Hueso Seleccionado</h4>
-            <div id="active-bone-display" class="active-bone-none">Ninguno</div>
           </div>
-
         </div>
       </div>
       
     </div>
   </div>
+</div>
   
   <!-- APLICACIÓN PRINCIPAL -->
   <div class="app-container">
