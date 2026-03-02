@@ -1,17 +1,21 @@
-/* VARIABLES DE DISEÑO (Regla 60-30-10) */
+/* VARIABLES DE DISEÑO (Estilo Studio Pro) */
 :root {
-  --color-dominant: #0a0a0a;  /* 60% Fondo General */
-  --color-secondary: #1c1c1e; /* 30% Paneles laterales */
-  --color-accent: #ff3b30;    /* 10% Rojo Moderno */
-  --color-text-main: #ffffff;
-  --color-text-muted: #8e8e93;
-  --color-border: #333333;
-  --radius-std: 8px;
+  --color-dominant: #0d1117;  /* Fondo General (Gris azulado muy oscuro) */
+  --color-secondary: #161b22; /* Paneles laterales */
+  --color-accent: #2f81f7;    /* Azul técnico profesional */
+  --color-accent-hover: #388bfd;
+  --color-danger: #f85149;    /* Rojo solo para grabación y alertas */
+  --color-text-main: #e6edf3;
+  --color-text-muted: #8b949e;
+  --color-border: #30363d;
+  --color-panel-bg: #21262d;
+  --radius-std: 6px;
+  --font-main: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 body {
   margin: 0;
-  font-family: 'Roboto', helvetica, arial, sans-serif;
+  font-family: var(--font-main);
   background-color: var(--color-dominant);
   color: var(--color-text-main);
   height: 100vh;
@@ -27,445 +31,158 @@ body {
   height: 100vh;
 }
 
+/* --- BARRA LATERAL (NUEVO) --- */
+.sidebar {
+  width: 68px;
+  background-color: var(--color-secondary);
+  border-right: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 15px 0;
+  z-index: 100;
+}
+
+.brand-logo {
+  color: var(--color-accent);
+  margin-bottom: 30px;
+}
+
+.brand-logo i {
+  font-size: 32px;
+}
+
+.nav-items {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  flex: 1;
+}
+
+.nav-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  width: 52px;
+}
+
+.nav-btn i { font-size: 24px; }
+.nav-btn span { font-size: 10px; font-weight: 500; }
+
+.nav-btn:hover {
+  color: var(--color-text-main);
+  background-color: var(--color-panel-bg);
+}
+
+.nav-btn.active {
+  color: var(--color-accent);
+  background-color: rgba(47, 129, 247, 0.1);
+  border-left: 3px solid var(--color-accent);
+  border-radius: 0 8px 8px 0;
+}
+
+.nav-footer { margin-top: auto; }
+
+/* --- CONTENEDOR DE TRABAJO --- */
+.workspace-container {
+  display: flex;
+  flex: 1;
+  height: 100vh;
+}
+
 .left-panel {
-  flex: 1; /* Ocupa todo el espacio restante */
-  background-color: #121212;
+  flex: 1; 
+  background-color: var(--color-dominant);
   position: relative;
-  /* El 3D tendrá más protagonismo aquí */
 }
 
 .right-panel {
-  width: 320px; /* ANCHO REDUCIDO (Antes 400px) */
+  width: 320px;
   min-width: 300px;
   display: flex;
   flex-direction: column;
-  background-color: var(--color-dominant);
+  background-color: var(--color-secondary);
   border-left: 1px solid var(--color-border);
   height: 100vh;
 }
 
 /* =========================================
-   DIVISIÓN MITAD / MITAD (Vertical)
+   PANELES Y SECCIONES
    ========================================= */
 .top-section {
   padding: 20px;
   border-bottom: 1px solid var(--color-border);
   background-color: var(--color-secondary);
-  flex-shrink: 0; /* No se encoge */
+  flex-shrink: 0;
 }
 
 .bottom-section {
-  flex: 1; /* Ocupa el resto del espacio hacia abajo */
+  flex: 1;
   padding: 15px 20px;
   display: flex;
   flex-direction: column;
-  overflow: hidden; /* Importante para el scroll interno */
+  overflow: hidden;
+  border-top: 1px solid var(--color-border);
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
 }
 
 .panel-header h2 {
-  font-size: 1rem;
-  margin: 0 0 15px 0;
+  font-size: 0.9rem;
+  margin: 0;
   color: var(--color-text-main);
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
 }
 
 /* =========================================
-   VIDEO (Más compacto)
+   VIDEO
    ========================================= */
-.video-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
+.video-wrapper { display: flex; flex-direction: column; gap: 10px; }
 
 .video-section {
   position: relative;
   width: 100%;
-  height: 160px; /* ALTURA FIJA MÁS PEQUEÑA */
+  height: 160px;
   background-color: #000;
   border-radius: var(--radius-std);
   overflow: hidden;
   border: 1px solid var(--color-border);
 }
 
-video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover; /* Recorta el video para llenar el cuadro sin deformar */
-  transform: rotateY(180deg);
-}
+video { width: 100%; height: 100%; object-fit: cover; }
+.output_canvas { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
 
-.output_canvas {
-  position: absolute;
-  left: 0; top: 0;
-  width: 100%; height: 100%;
-  transform: rotateY(180deg);
-}
-
-/* Botón de cámara */
+/* Botón de cámara principal */
 .accent-btn {
   background-color: var(--color-accent) !important;
   color: white !important;
-  height: 36px; /* Botón más delgado */
 }
 
 /* =========================================
-   DATOS (Scroll independiente)
-   ========================================= */
-.bottom-section h3 {
-  font-size: 0.85rem;
-  color: var(--color-text-muted);
-  margin-top: 0;
-  margin-bottom: 10px;
-  text-transform: uppercase;
-}
-
-.data-scroll-area {
-  flex: 1;
-  overflow-y: auto; /* Scroll solo aquí */
-  padding-right: 5px;
-}
-
-/* Estilo de Scrollbar */
-.data-scroll-area::-webkit-scrollbar { width: 4px; }
-.data-scroll-area::-webkit-scrollbar-track { background: transparent; }
-.data-scroll-area::-webkit-scrollbar-thumb { background: #444; border-radius: 2px; }
-
-.blend-shapes-list { padding: 0; list-style: none; margin: 0; }
-
-.blend-shapes-item {
-  display: flex;
-  align-items: center;
-  height: 24px; /* Items más compactos */
-  margin-bottom: 2px;
-}
-
-.blend-shapes-label {
-  flex: 1;
-  font-size: 11px;
-  color: #bbb;
-  text-align: left;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.blend-shapes-value {
-  height: 4px;
-  background-color: var(--color-accent);
-  border-radius: 2px;
-  min-width: 2px;
-}
-
-/* =========================================
-   MODAL (Ajustes Visuales)
-   ========================================= */
-.modal-overlay {
-  position: fixed;
-  top: 0; left: 0; width: 100%; height: 100%;
-  background-color: rgba(0, 0, 0, 0.9);
-  backdrop-filter: blur(4px);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 2000;
-}
-
-.modal-content {
-  background-color: var(--color-secondary);
-  width: 90%;
-  max-width: 1000px;
-  height: 80vh;
-  border-radius: 12px;
-  border: 1px solid var(--color-border);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.modal-header {
-  padding: 15px 25px;
-  background-color: var(--color-dominant);
-  border-bottom: 1px solid var(--color-border);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.confirm-btn {
-  background-color: var(--color-accent) !important;
-  color: #fff !important;
-}
-
-.modal-body { display: flex; flex: 1; overflow: hidden; }
-
-.modal-left {
-  flex: 1.5; /* Más espacio al visor 3D */
-  background-color: #111;
-  position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.modal-right {
-  flex: 1;
-  background-color: var(--color-secondary);
-  border-left: 1px solid var(--color-border);
-  padding: 25px;
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
-}
-
-/* Inputs de búsqueda */
-.input-group {
-  border: 1px solid #444;
-  border-radius: 6px;
-  overflow: hidden;
-}
-
-.bone-search-input {
-  width: 100%;
-  padding: 8px 10px;
-  background-color: #222;
-  border: none;
-  border-bottom: 1px solid #333;
-  color: white;
-  outline: none;
-}
-
-.bone-select {
-  width: 100%;
-  padding: 8px;
-  background-color: #222;
-  color: #ddd;
-  border: none;
-  outline: none;
-}
-
-.auto-detect-bar button {
-  width: 100%;
-  margin: 15px 0;
-  border-color: var(--color-accent) !important;
-  color: var(--color-accent) !important;
-}
-
-.feedback-panel {
-  margin-top: auto;
-  padding: 10px;
-  background: rgba(255,255,255,0.05);
-  border-radius: 4px;
-  text-align: center;
-}
-
-/* Contenedor de botones de cámara */
-.cam-controls {
-  display: flex;
-  gap: 10px;
-  margin-top: 10px;
-}
-
-/* Botón de Grabación */
-.record-btn {
-  background-color: #333 !important; /* Gris cuando está inactivo */
-  color: #888 !important;
-  transition: all 0.3s ease;
-}
-
-.record-btn:not(:disabled) {
-  color: white !important;
-}
-
-/* Estado Activo (Grabando) */
-.record-btn.recording {
-  background-color: #ff3b30 !important; /* Rojo vivo */
-  color: white !important;
-  animation: pulse-btn 2s infinite;
-}
-
-/* Indicador REC sobre el video */
-.rec-dot {
-  position: absolute;
-  top: 15px;
-  right: 15px;
-  width: 12px;
-  height: 12px;
-  background-color: #ff3b30;
-  border-radius: 50%;
-  z-index: 10;
-  box-shadow: 0 0 10px rgba(255, 59, 48, 0.8);
-  animation: blink-dot 1s infinite;
-}
-
-.rec-dot.hidden { display: none; }
-
-/* Animaciones */
-@keyframes blink-dot {
-  0% { opacity: 1; }
-  50% { opacity: 0; }
-  100% { opacity: 1; }
-}
-
-@keyframes pulse-btn {
-  0% { box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.7); }
-  70% { box-shadow: 0 0 0 10px rgba(255, 59, 48, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(255, 59, 48, 0); }
-}
-
-/* =========================================
-   NUEVO: CRONÓMETRO Y CLIPS
-   ========================================= */
-
-/* Cronómetro Digital */
-.timer-display {
-    font-family: 'Roboto Mono', monospace;
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: #444; /* Apagado por defecto */
-    background: rgba(0,0,0,0.3);
-    padding: 4px 8px;
-    border-radius: 4px;
-    border: 1px solid #333;
-    transition: color 0.3s;
-}
-
-.timer-display.active {
-    color: var(--color-accent); /* Rojo al grabar */
-    border-color: var(--color-accent);
-    text-shadow: 0 0 8px rgba(255, 59, 48, 0.4);
-}
-
-/* Sección de Clips */
-.clips-section {
-    padding: 15px 20px;
-    background-color: var(--color-dominant);
-    border-bottom: 1px solid var(--color-border);
-    flex: 1; /* Ocupa buen espacio */
-    display: flex;
-    flex-direction: column;
-    min-height: 200px;
-}
-
-.section-title {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-}
-
-.section-title h3 {
-    margin: 0;
-    font-size: 0.85rem;
-    color: var(--color-text-muted);
-    text-transform: uppercase;
-}
-
-.badge {
-    background: #333;
-    color: white;
-    font-size: 0.7rem;
-    padding: 2px 6px;
-    border-radius: 10px;
-}
-
-/* Lista de Clips */
-.clips-container-scroll {
-    flex: 1;
-    overflow-y: auto;
-    border: 1px solid #222;
-    background-color: rgba(0,0,0,0.2);
-    border-radius: 6px;
-    margin-bottom: 10px;
-}
-
-.clips-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.empty-state {
-    padding: 20px;
-    text-align: center;
-    color: #555;
-    font-style: italic;
-    font-size: 0.9rem;
-}
-
-/* Item Individual (Tarjeta de Toma) */
-.clip-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px;
-    border-bottom: 1px solid #222;
-    background-color: #1a1a1a;
-    transition: background 0.2s;
-    cursor: pointer;
-}
-
-.clip-item:hover {
-    background-color: #252525;
-}
-
-.clip-item.selected {
-    background-color: #2a2a2a;
-    border-left: 3px solid var(--color-accent);
-}
-
-.clip-info {
-    display: flex;
-    flex-direction: column;
-}
-
-.clip-name {
-    font-weight: 500;
-    color: white;
-    font-size: 0.9rem;
-}
-
-.clip-meta {
-    font-size: 0.75rem;
-    color: #777;
-    margin-top: 2px;
-}
-
-.clip-actions {
-    display: flex;
-    gap: 5px;
-}
-
-/* Botones pequeños dentro del clip */
-.icon-btn {
-    background: none;
-    border: none;
-    color: #666;
-    cursor: pointer;
-    padding: 4px;
-    border-radius: 4px;
-    transition: color 0.2s, background 0.2s;
-}
-
-.icon-btn:hover { color: white; background: #333; }
-.icon-btn.play:hover { color: #4cd964; } /* Verde para play */
-.icon-btn.delete:hover { color: #ff3b30; } /* Rojo para borrar */
-
-.export-area {
-    margin-top: auto;
-}
-
-/* =========================================
-   NUEVO: PESTAÑAS DE FUENTE (WEBCAM / VIDEO)
+   PESTAÑAS (WEBCAM / VIDEO)
    ========================================= */
 .input-source-tabs {
   display: flex;
-  gap: 5px;
+  gap: 4px;
   margin-bottom: 15px;
-  background-color: #111;
+  background-color: var(--color-dominant);
   padding: 4px;
-  border-radius: 6px;
+  border-radius: var(--radius-std);
   border: 1px solid var(--color-border);
 }
 
@@ -474,87 +191,254 @@ video {
   background: transparent;
   border: none;
   color: var(--color-text-muted);
-  padding: 8px 0;
+  padding: 6px 0;
   border-radius: 4px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: 6px;
   font-size: 0.8rem;
   font-weight: 500;
   transition: all 0.2s ease;
 }
 
-.source-tab i {
-  font-size: 1.1rem;
-}
-
-.source-tab:hover {
-  color: white;
-  background-color: rgba(255,255,255,0.05);
-}
-
+.source-tab i { font-size: 1.1rem; }
+.source-tab:hover { color: var(--color-text-main); }
 .source-tab.active {
-  background-color: var(--color-secondary);
-  color: var(--color-accent);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  background-color: var(--color-panel-bg);
+  color: var(--color-text-main);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
 
 /* =========================================
-   ESTILOS DINÁMICOS PARA CONTROLES Y VIDEO
+   CONTROLES DE CÁMARA Y GRABACIÓN
    ========================================= */
-.hidden {
-  display: none !important;
-}
-
-.action-btn {
-  flex: 1;
-}
+.cam-controls { display: flex; gap: 8px; margin-top: 10px; }
+.action-btn, .record-btn { flex: 1; height: 36px; }
 
 .record-btn {
-  flex: 1;
+  background-color: var(--color-panel-bg) !important; 
+  color: var(--color-text-muted) !important;
+  transition: all 0.3s ease;
 }
 
-/* Separamos el transform de 'video' base. 
-  Solo aplicamos efecto espejo cuando es webcam. 
-*/
-video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  /* Eliminamos el transform: rotateY(180deg) de aquí */
+.record-btn:not(:disabled):hover { background-color: #3b424a !important; }
+.record-btn:not(:disabled) { color: white !important; }
+
+/* Estado Activo (Grabando) */
+.record-btn.recording {
+  background-color: var(--color-danger) !important;
+  color: white !important;
+  animation: pulse-btn 2s infinite;
 }
 
-/* Clase para aplicar el modo espejo dinámicamente */
-.mirrored {
-  transform: rotateY(180deg);
-}
-
-/* Mensaje overlay para arrastrar video */
-.video-overlay {
+/* Indicador REC sobre el video */
+.rec-dot {
   position: absolute;
-  top: 0; left: 0; width: 100%; height: 100%;
-  background-color: rgba(0, 0, 0, 0.7);
+  top: 12px; right: 12px;
+  width: 10px; height: 10px;
+  background-color: var(--color-danger);
+  border-radius: 50%;
+  z-index: 10;
+  box-shadow: 0 0 8px rgba(248, 81, 73, 0.8);
+  animation: blink-dot 1s infinite;
+}
+
+/* =========================================
+   CRONÓMETRO Y CLIPS
+   ========================================= */
+.timer-display {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  background: var(--color-dominant);
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--color-border);
+  transition: all 0.3s;
+}
+
+.timer-display.active {
+  color: var(--color-danger);
+  border-color: rgba(248, 81, 73, 0.5);
+  background: rgba(248, 81, 73, 0.1);
+}
+
+.clips-section {
+  padding: 15px 20px;
+  background-color: var(--color-secondary);
+  flex: 1; 
+  display: flex;
+  flex-direction: column;
+  min-height: 200px;
+}
+
+.section-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.section-title h3 {
+  margin: 0; font-size: 0.8rem; color: var(--color-text-muted);
+  text-transform: uppercase; font-weight: 600;
+}
+
+.badge {
+  background: var(--color-panel-bg); color: var(--color-text-main);
+  font-size: 0.7rem; padding: 2px 8px; border-radius: 12px;
+  border: 1px solid var(--color-border);
+}
+
+.clips-container-scroll {
+  flex: 1; overflow-y: auto;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-dominant);
+  border-radius: var(--radius-std);
+  margin-bottom: 12px;
+}
+
+.clips-list { list-style: none; padding: 0; margin: 0; }
+.empty-state { padding: 20px; text-align: center; color: var(--color-text-muted); font-size: 0.85rem; }
+
+.clip-item {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px; border-bottom: 1px solid var(--color-border);
+  background-color: transparent; transition: background 0.2s; cursor: pointer;
+}
+
+.clip-item:hover { background-color: var(--color-panel-bg); }
+.clip-item.selected {
+  background-color: rgba(47, 129, 247, 0.1);
+  border-left: 3px solid var(--color-accent);
+}
+
+.clip-info { display: flex; flex-direction: column; }
+.clip-name { font-weight: 500; font-size: 0.85rem; }
+.clip-meta { font-size: 0.7rem; color: var(--color-text-muted); margin-top: 4px; }
+
+.clip-actions { display: flex; gap: 4px; }
+.icon-btn {
+  background: none; border: none; color: var(--color-text-muted);
+  cursor: pointer; padding: 4px; border-radius: 4px; transition: all 0.2s;
+}
+.icon-btn:hover { color: var(--color-text-main); background: var(--color-panel-bg); }
+.icon-btn.play:hover { color: #2ea043; } /* Verde Github */
+.icon-btn.delete:hover { color: var(--color-danger); }
+
+/* =========================================
+   BLENDSHAPES
+   ========================================= */
+.bottom-section h3 {
+  font-size: 0.8rem; color: var(--color-text-muted);
+  margin-top: 0; margin-bottom: 10px; text-transform: uppercase; font-weight: 600;
+}
+
+.data-scroll-area { flex: 1; overflow-y: auto; padding-right: 5px; }
+.data-scroll-area::-webkit-scrollbar { width: 4px; }
+.data-scroll-area::-webkit-scrollbar-track { background: transparent; }
+.data-scroll-area::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 2px; }
+
+.blend-shapes-list { padding: 0; list-style: none; margin: 0; }
+.blend-shapes-item { display: flex; align-items: center; height: 22px; margin-bottom: 4px; }
+.blend-shapes-label { flex: 1; font-size: 11px; color: var(--color-text-muted); text-align: left; }
+.blend-shapes-value { height: 4px; background-color: var(--color-accent); border-radius: 2px; }
+
+/* =========================================
+   MODAL
+   ========================================= */
+.modal-overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background-color: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px);
+  display: flex; justify-content: center; align-items: center; z-index: 2000;
+}
+
+.modal-content {
+  background-color: var(--color-secondary); width: 90%; max-width: 1000px; height: 80vh;
+  border-radius: 12px; border: 1px solid var(--color-border);
+  display: flex; flex-direction: column; overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+}
+
+.modal-header {
+  padding: 15px 25px; background-color: var(--color-dominant);
+  border-bottom: 1px solid var(--color-border);
+  display: flex; justify-content: space-between; align-items: center;
+}
+
+.modal-header h2 { margin: 0; font-size: 1.1rem; font-weight: 600; }
+.confirm-btn { background-color: var(--color-accent) !important; color: #fff !important; }
+
+.modal-body { display: flex; flex: 1; overflow: hidden; }
+.modal-left { flex: 1.5; background-color: var(--color-dominant); position: relative; display: flex; justify-content: center; align-items: center; }
+.modal-right { flex: 1; background-color: var(--color-secondary); border-left: 1px solid var(--color-border); padding: 25px; display: flex; flex-direction: column; overflow-y: auto; }
+
+.input-group { border: 1px solid var(--color-border); border-radius: var(--radius-std); overflow: hidden; }
+.bone-search-input, .bone-select { width: 100%; padding: 10px; background-color: var(--color-dominant); color: var(--color-text-main); border: none; outline: none; box-sizing: border-box;}
+.bone-search-input { border-bottom: 1px solid var(--color-border); }
+.bone-select { cursor: pointer; }
+
+.auto-detect-bar button { border-color: var(--color-accent) !important; color: var(--color-accent) !important; margin: 15px 0;}
+.feedback-panel { margin-top: auto; padding: 15px; background: var(--color-panel-bg); border-radius: var(--radius-std); text-align: center; border: 1px solid var(--color-border); }
+.feedback-panel h4 { margin: 0 0 10px 0; font-size: 0.85rem; color: var(--color-text-muted); }
+.active-bone-selected { color: var(--color-accent); font-weight: 600; }
+
+/* Utilidades */
+.hidden { display: none !important; }
+.mirrored { transform: rotateY(180deg); }
+.video-overlay {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  background-color: rgba(13, 17, 23, 0.8); display: flex; flex-direction: column; justify-content: center; align-items: center;
+  color: var(--color-text-muted); z-index: 5; border: 2px dashed var(--color-border); border-radius: var(--radius-std); box-sizing: border-box; transition: all 0.2s;
+}
+.video-overlay.dragover { border-color: var(--color-accent); color: var(--color-accent); background-color: rgba(47, 129, 247, 0.1); }
+
+@keyframes blink-dot { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes pulse-btn { 0% { box-shadow: 0 0 0 0 rgba(248, 81, 73, 0.6); } 70% { box-shadow: 0 0 0 8px rgba(248, 81, 73, 0); } 100% { box-shadow: 0 0 0 0 rgba(248, 81, 73, 0); } }
+
+/* =========================================
+   ESTADOS VACÍOS Y MODAL
+   ========================================= */
+
+/* Ocultar el modal por defecto */
+.modal-overlay {
+  display: none; /* ¡CRÍTICO! Esto oculta el modal al inicio */
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background-color: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px);
+  justify-content: center; align-items: center; z-index: 2000;
+}
+
+/* Estado Vacío del Visor 3D */
+.empty-workspace {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  color: #777;
-  z-index: 5;
-  border: 2px dashed #444;
-  border-radius: var(--radius-std);
-  box-sizing: border-box;
-  transition: border-color 0.2s, color 0.2s;
+  text-align: center;
+  color: var(--color-text-muted);
+  background-color: var(--color-dominant);
+  z-index: 10;
 }
 
-.video-overlay.dragover {
-  border-color: var(--color-accent);
-  color: white;
-  background-color: rgba(255, 59, 48, 0.1);
+.empty-workspace h2 {
+  color: var(--color-text-main);
+  margin: 10px 0 5px 0;
+  font-weight: 500;
 }
 
-.video-overlay i {
-  font-size: 2rem;
-  margin-bottom: 5px;
+.empty-workspace p {
+  font-size: 0.9rem;
+  max-width: 300px;
+  margin: 0;
+}
+
+.empty-icon {
+  font-size: 64px;
+  color: var(--color-border);
+  margin-bottom: 10px;
 }

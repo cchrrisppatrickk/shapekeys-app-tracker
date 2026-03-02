@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Face Tracker & 3D Viewer - Red Edition</title>
+  <title>Mocap Studio Web - Dashboard</title>
   
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   
   <link href="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.css" rel="stylesheet">
@@ -13,10 +13,8 @@
 </head>
 <body>
   
-  <!-- MODAL DE CONFIGURACIÓN INICIAL -->
   <div id="setup-modal" class="modal-overlay">
     <div class="modal-content">
-      
       <div class="modal-header">
         <h2>Asignación de Esqueleto</h2>
         <button id="confirm-mapping-btn" class="mdc-button mdc-button--raised confirm-btn">
@@ -26,15 +24,11 @@
       </div>
 
       <div class="modal-body">
-        
-        <!-- VISTA PREVIA 3D -->
         <div class="modal-left" id="preview-three-container">
           <div class="preview-placeholder">Arrastra tu modelo .glb aquí</div>
         </div>
 
-        <!-- PANEL DE CONFIGURACIÓN -->
         <div class="modal-right">
-          
           <div class="control-header">
             <h3>Configuración del Rig</h3>
             <p class="help-text">Arrastra un archivo .glb y configura los huesos.</p>
@@ -74,106 +68,138 @@
             <h4>Hueso Seleccionado</h4>
             <div id="active-bone-display" class="active-bone-none">Ninguno</div>
           </div>
-
         </div>
       </div>
-      
     </div>
   </div>
   
-  <!-- APLICACIÓN PRINCIPAL -->
   <div class="app-container">
     
-    <!-- PANEL IZQUIERDO: VISOR 3D (se moverá aquí tras la configuración) -->
-    <div class="left-panel" id="three-container"></div>
-
-    <!-- PANEL DERECHO: CONTROLES -->
-    <div class="right-panel">
+    <nav class="sidebar">
+      <div class="brand-logo">
+        <i class="material-icons">animation</i>
+      </div>
       
-      <!-- SECCIÓN SUPERIOR: CÁMARA Y CRONÓMETRO -->
-      <div class="top-section">
-        <div class="panel-header">
-          <h2>Panel de Control</h2>
-          <div id="recording-timer" class="timer-display">00:00.00</div>
+      <div class="nav-items">
+        <button class="nav-btn active" data-workspace="face" title="Face Tracking">
+          <i class="material-icons">face</i>
+          <span>Face</span>
+        </button>
+        
+        <button class="nav-btn" data-workspace="body" title="Body Tracking">
+          <i class="material-icons">accessibility_new</i>
+          <span>Body</span>
+        </button>
+      </div>
+
+      <div class="nav-footer">
+        <button class="nav-btn" title="Configuración">
+          <i class="material-icons">settings</i>
+        </button>
+      </div>
+    </nav>
+
+    <div class="workspace-container">
+      
+      <div class="left-panel" id="three-container">
+        
+        <div id="empty-workspace-state" class="empty-workspace">
+          <i class="material-icons empty-icon">view_in_ar</i>
+          <h2>Espacio de Trabajo Vacío</h2>
+          <p>Importa un modelo 3D (.glb) con rig facial para empezar a trackear.</p>
+          <button id="open-setup-btn" class="mdc-button mdc-button--raised accent-btn" style="margin-top: 20px;">
+            <span class="mdc-button__ripple"></span>
+            <i class="material-icons mdc-button__icon">add_box</i>
+            <span class="mdc-button__label">IMPORTAR MODELO 3D</span>
+          </button>
         </div>
 
-        <div class="input-source-tabs">
-          <button id="tab-webcam" class="source-tab active">
-            <i class="material-icons">videocam</i> Webcam
-          </button>
-          <button id="tab-video" class="source-tab">
-            <i class="material-icons">movie</i> Archivo
-          </button>
-        </div>
+      </div>
 
-        <div class="video-wrapper">
-          <div class="video-section" id="drop-zone-video">
-            <div id="recording-indicator" class="hidden rec-dot"></div>
-            
-            <div id="video-overlay-msg" class="hidden video-overlay">
-              <i class="material-icons">upload_file</i>
-              <span>Arrastra tu video aquí</span>
+      <div class="right-panel">
+        
+        <div class="top-section">
+          <div class="panel-header">
+            <h2>Panel de Control</h2>
+            <div id="recording-timer" class="timer-display">00:00.00</div>
+          </div>
+
+          <div class="input-source-tabs">
+            <button id="tab-webcam" class="source-tab active">
+              <i class="material-icons">videocam</i> Webcam
+            </button>
+            <button id="tab-video" class="source-tab">
+              <i class="material-icons">movie</i> Archivo
+            </button>
+          </div>
+
+          <div class="video-wrapper">
+            <div class="video-section" id="drop-zone-video">
+              <div id="recording-indicator" class="hidden rec-dot"></div>
+              
+              <div id="video-overlay-msg" class="hidden video-overlay">
+                <i class="material-icons">upload_file</i>
+                <span>Arrastra tu video aquí</span>
+              </div>
+
+              <video id="webcam" playsinline></video>
+              <canvas id="output_canvas" class="output_canvas"></canvas>
             </div>
+            
+            <div class="cam-controls">
+              <button id="webcamButton" class="mdc-button mdc-button--raised accent-btn action-btn">
+                <span class="mdc-button__ripple"></span>
+                <i class="material-icons mdc-button__icon" aria-hidden="true">videocam</i>
+                <span class="mdc-button__label">CÁMARA</span>
+              </button>
 
-            <video id="webcam" playsinline></video>
-            <canvas id="output_canvas" class="output_canvas"></canvas>
+              <input type="file" id="videoFileInput" accept="video/mp4, video/webm, video/quicktime" style="display: none;">
+              <button id="uploadVideoButton" class="hidden mdc-button mdc-button--raised action-btn" style="background-color: var(--color-border);">
+                <span class="mdc-button__ripple"></span>
+                <i class="material-icons mdc-button__icon" aria-hidden="true">folder_open</i>
+                <span class="mdc-button__label">CARGAR</span>
+              </button>
+
+              <button id="recordButton" class="mdc-button mdc-button--raised record-btn" disabled>
+                <span class="mdc-button__ripple"></span>
+                <i class="material-icons mdc-button__icon" aria-hidden="true">fiber_manual_record</i>
+                <span class="mdc-button__label">REC</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="clips-section">
+          <div class="section-title">
+            <h3>Tomas Grabadas</h3>
+            <span id="takes-count" class="badge">0</span>
+          </div>
+          <div class="clips-container-scroll">
+            <ul id="clips-list" class="clips-list">
+              <li class="empty-state">No hay grabaciones aún.</li>
+            </ul>
           </div>
           
-          <div class="cam-controls">
-            <button id="webcamButton" class="mdc-button mdc-button--raised accent-btn action-btn">
+          <div class="export-area">
+            <button id="exportButton" class="mdc-button mdc-button--outlined full-width-btn" disabled>
               <span class="mdc-button__ripple"></span>
-              <i class="material-icons mdc-button__icon" aria-hidden="true">videocam</i>
-              <span class="mdc-button__label">CÁMARA</span>
-            </button>
-
-            <input type="file" id="videoFileInput" accept="video/mp4, video/webm, video/quicktime" style="display: none;">
-            <button id="uploadVideoButton" class="hidden mdc-button mdc-button--raised action-btn" style="background-color: #555;">
-              <span class="mdc-button__ripple"></span>
-              <i class="material-icons mdc-button__icon" aria-hidden="true">folder_open</i>
-              <span class="mdc-button__label">CARGAR</span>
-            </button>
-
-            <button id="recordButton" class="mdc-button mdc-button--raised record-btn" disabled>
-              <span class="mdc-button__ripple"></span>
-              <i class="material-icons mdc-button__icon" aria-hidden="true">fiber_manual_record</i>
-              <span class="mdc-button__label">REC</span>
+              <i class="material-icons mdc-button__icon">download</i>
+              <span class="mdc-button__label">EXPORTAR SELECCIÓN (.GLB)</span>
             </button>
           </div>
         </div>
-      </div>
 
-      <!-- SECCIÓN DE TOMAS GRABADAS (CLIPS) -->
-      <div class="clips-section">
-        <div class="section-title">
-          <h3>Tomas Grabadas (Takes)</h3>
-          <span id="takes-count" class="badge">0</span>
+        <div class="bottom-section" id="blendshapes-panel">
+          <h3>Monitor de Blendshapes</h3>
+          <div class="data-scroll-area">
+            <ul class="blend-shapes-list" id="video-blend-shapes"></ul>
+          </div>
         </div>
-        <div class="clips-container-scroll">
-          <ul id="clips-list" class="clips-list">
-            <li class="empty-state">No hay grabaciones aún.</li>
-          </ul>
-        </div>
-        
-        <div class="export-area">
-          <button id="exportButton" class="mdc-button mdc-button--outlined full-width-btn" disabled>
-            <span class="mdc-button__ripple"></span>
-            <i class="material-icons mdc-button__icon">download</i>
-            <span class="mdc-button__label">EXPORTAR SELECCIÓN (.GLB)</span>
-          </button>
-        </div>
-      </div>
 
-      <!-- SECCIÓN INFERIOR: MONITOR DE BLENDSHAPES -->
-      <div class="bottom-section">
-        <h3>Monitor de Blendshapes</h3>
-        <div class="data-scroll-area">
-          <ul class="blend-shapes-list" id="video-blend-shapes"></ul>
-        </div>
-      </div>
-
-    </div> <!-- Fin right-panel -->
-  </div> <!-- Fin app-container -->
-
+      </div> 
+    </div> 
+  </div> 
+  
   <script type="module" src="./src/main.js"></script>
 </body>
 </html>

@@ -12,7 +12,7 @@ import { LIGHT_CONFIG } from './logic/constants.js';
 import * as Avatar from './logic/avatar-control.js';
 import * as Recorder from './logic/recorder.js';
 import * as UI from './logic/ui-handler.js';
-import * as MediaManager from './logic/media-manager.js'; // NUEVO MÓDULO
+import * as MediaManager from './logic/media-manager.js';
 import { exportTakeToGLB } from './logic/exporter.js';
 
 import Stats from 'three/addons/libs/stats.module.js';
@@ -48,7 +48,10 @@ const dom = {
     dropZoneVideo: document.getElementById("drop-zone-video"),
     videoOverlayMsg: document.getElementById("video-overlay-msg"),
     videoFileInput: document.getElementById("videoFileInput"),
-    uploadVideoButton: document.getElementById("uploadVideoButton")
+    uploadVideoButton: document.getElementById("uploadVideoButton"),
+
+    openSetupBtn: document.getElementById('open-setup-btn'),
+    emptyWorkspaceState: document.getElementById('empty-workspace-state'),
 };
 
 // ==========================================
@@ -90,7 +93,7 @@ async function createFaceLandmarker() {
 
 function initThreeJS() {
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x111111);
+    scene.background = new THREE.Color(0x0d1117); // Ajustado al color dominante del dashboard
 
     const width = dom.previewContainer.clientWidth;
     const height = dom.previewContainer.clientHeight;
@@ -100,7 +103,7 @@ function initThreeJS() {
 
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(width, height);
-    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     dom.previewContainer.appendChild(renderer.domElement);
 
@@ -125,19 +128,11 @@ function initThreeJS() {
     controls.maxPolarAngle = Math.PI;
     controls.update();
 
-    // NUEVO: Inicializar Stats (Monitor de FPS)
     stats = new Stats();
-    // Lo posicionamos absoluto para que no rompa tu maquetación
     stats.dom.style.position = 'absolute';
     stats.dom.style.top = '10px';
     stats.dom.style.left = '10px';
-    // Lo añadimos al contenedor principal (o al document.body)
     dom.mainContainer.appendChild(stats.dom); 
-
-    // Optimización 1: Limitar el Pixel Ratio
-    // Los monitores modernos (MacBooks, móviles) tienen Pixel Ratio de 2 o 3. 
-    // Renderizar a esa escala mata el rendimiento. Lo limitamos a máximo 2.
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
     animate3D();
     window.addEventListener('resize', onWindowResize);
@@ -147,8 +142,7 @@ function animate3D() {
     requestAnimationFrame(animate3D);
     if (controls) controls.update();
     renderer.render(scene, camera);
-    
-    if (stats) stats.update(); // NUEVO: Actualizar el contador de FPS
+    if (stats) stats.update();
 }
 
 function onWindowResize() {
@@ -165,8 +159,6 @@ function onWindowResize() {
 function initUIHandlers() {
     UI.initUI(dom);
     
-    // INICIALIZAMOS EL NUEVO GESTOR MULTIMEDIA
-    // Le pasamos las referencias del DOM y le decimos qué función debe ejecutar cuando empiece a reproducirse un video/webcam
     MediaManager.initMediaManager(dom, predictWebcam);
 
     Recorder.initRecorderUI({
@@ -185,11 +177,16 @@ function initUIHandlers() {
 }
 
 function initEventListeners() {
-    // Model Drop
+    // Abrir modal al hacer clic en "Importar Modelo 3D"
+    if (dom.openSetupBtn) {
+        dom.openSetupBtn.addEventListener('click', () => {
+            dom.setupModal.style.display = 'flex';
+        });
+    }
+
     window.addEventListener('dragover', (e) => e.preventDefault());
     window.addEventListener('drop', handleDrop);
 
-    // Controles Base
     dom.recordButton.addEventListener("click", () => Recorder.isRecording ? Recorder.stopRecording() : Recorder.startRecording());
     dom.confirmBtn.addEventListener('click', confirmMapping);
     
@@ -254,13 +251,17 @@ function confirmMapping() {
     Avatar.setBones(headBone, neckBone);
     if (!headBone) alert("Advertencia: No has seleccionado hueso de cabeza.");
 
+    // Ocultar el mensaje de "Espacio vacío"
+    if (dom.emptyWorkspaceState) {
+        dom.emptyWorkspaceState.style.display = 'none';
+    }
+
     dom.mainContainer.appendChild(renderer.domElement);
     const newWidth = dom.mainContainer.clientWidth;
     const newHeight = dom.mainContainer.clientHeight;
     renderer.setSize(newWidth, newHeight);
     camera.aspect = newWidth / newHeight;
     camera.updateProjectionMatrix();
-    scene.background = new THREE.Color(0x0a0a0a);
     dom.setupModal.style.display = 'none';
 }
 
@@ -303,7 +304,6 @@ async function predictWebcam() {
         }
     }
 
-    // Leemos el estado del nuevo módulo para saber si debemos continuar el loop
     if (MediaManager.webcamRunning || MediaManager.videoTrackingActive) {
         window.requestAnimationFrame(predictWebcam);
     }
