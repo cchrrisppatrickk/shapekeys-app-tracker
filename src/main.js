@@ -159,6 +159,7 @@ function onWindowResize() {
 function initUIHandlers() {
     UI.initUI(dom);
     
+    // INICIALIZAMOS EL GESTOR MULTIMEDIA
     MediaManager.initMediaManager(dom, predictWebcam);
 
     Recorder.initRecorderUI({
@@ -174,6 +175,9 @@ function initUIHandlers() {
         onTimerUpdate: (timeString) => UI.updateTimerDisplay(timeString),
         onTakesUpdated: (takes, activeId) => UI.renderClipsList(takes, activeId)
     });
+
+    // NUEVO: Inicializamos la navegación lateral
+    UI.initWorkspaceSwitcher();
 }
 
 function initEventListeners() {
