@@ -10,7 +10,6 @@ export let videoTrackingActive = false;
 let dom = {};
 let onMediaReadyCallback = null;
 
-// Inicializa el manager con los elementos DOM y la función que iniciará el bucle (predictWebcam)
 export function initMediaManager(domElements, onMediaReady) {
     dom = domElements;
     onMediaReadyCallback = onMediaReady;
@@ -18,15 +17,12 @@ export function initMediaManager(domElements, onMediaReady) {
 }
 
 function attachEvents() {
-    // Pestañas
     dom.tabWebcam.addEventListener("click", () => switchInputMode('webcam'));
     dom.tabVideo.addEventListener("click", () => switchInputMode('video'));
 
-    // Carga de Video
     dom.uploadVideoButton.addEventListener("click", () => dom.videoFileInput.click());
     dom.videoFileInput.addEventListener("change", (e) => handleVideoFile(e.target.files[0]));
 
-    // Drag & Drop de Video
     dom.dropZoneVideo.addEventListener("dragover", (e) => {
         e.preventDefault();
         if (currentMode === 'video') dom.videoOverlayMsg.classList.add("dragover");
@@ -43,7 +39,6 @@ function attachEvents() {
         }
     });
 
-    // Botón Webcam
     dom.enableWebcamButton.addEventListener("click", toggleWebcam);
 }
 
@@ -51,12 +46,12 @@ export function switchInputMode(mode) {
     if (mode === currentMode) return;
     currentMode = mode;
 
-    // Detener procesos
+    // LIMPIEZA TOTAL DE FUENTES AL CAMBIAR DE PESTAÑA
     if (webcamRunning) toggleWebcam(); 
     if (videoTrackingActive) {
         videoTrackingActive = false;
         dom.video.pause();
-        dom.video.removeAttribute('src'); // Limpieza para no romper el srcObject
+        dom.video.removeAttribute('src'); 
         dom.video.load();
     }
 
@@ -70,6 +65,7 @@ export function switchInputMode(mode) {
         dom.videoOverlayMsg.classList.remove("hidden");
         dom.video.classList.remove("mirrored");
         dom.canvasElement.classList.remove("mirrored");
+        if(dom.previewCanvas) dom.previewCanvas.classList.remove("mirrored");
     } else {
         dom.tabVideo.classList.remove("active");
         dom.tabWebcam.classList.add("active");
@@ -78,9 +74,10 @@ export function switchInputMode(mode) {
         dom.videoOverlayMsg.classList.add("hidden");
         dom.video.classList.add("mirrored");
         dom.canvasElement.classList.add("mirrored");
+        if(dom.previewCanvas) dom.previewCanvas.classList.add("mirrored");
     }
     
-    // Limpiar canvas
+    // Limpiar canvas local
     const ctx = dom.canvasElement.getContext("2d");
     ctx.clearRect(0, 0, dom.canvasElement.width, dom.canvasElement.height);
 }
@@ -98,18 +95,21 @@ export function toggleWebcam() {
         webcamRunning = true;
         dom.enableWebcamButton.classList.add("accent-btn");
 
-        // OPTIMIZACIÓN 3: Bajar de 1280x720 a 640x480
         const constraints = { video: { width: 640, height: 480 } }; 
         navigator.mediaDevices.getUserMedia(constraints).then((stream) =>{
-            dom.video.removeAttribute('src'); // Asegurarnos de limpiar archivos previos
+            dom.video.removeAttribute('src'); // Limpiamos rastro de archivo
             dom.video.srcObject = stream;
             
-            // Usar onloadeddata (evita el memory leak de addEventListener)
-            dom.video.onloadeddata = () => {
-                dom.video.play(); // Forzar play es crítico al cambiar de fuentes
+            // onplaying asegura que el video realmente tiene datos fluyendo
+            dom.video.onplaying = () => {
                 dom.recordButton.disabled = false;
-                if (onMediaReadyCallback) onMediaReadyCallback(); // Dispara predictWebcam
+                if (onMediaReadyCallback) onMediaReadyCallback();
             };
+            dom.video.play();
+        }).catch(err => {
+            console.error("Error webcam:", err);
+            webcamRunning = false;
+            dom.enableWebcamButton.classList.remove("accent-btn");
         });
     }
 }
@@ -130,12 +130,13 @@ function handleVideoFile(file) {
     
     dom.video.src = fileURL;
     dom.video.loop = true;
-    dom.video.muted = true;
+    dom.video.muted = true; // REQUISITO para reproducir sin interacción en algunos navegadores
 
-    dom.video.onloadeddata = () => {
-        dom.video.play();
+    dom.video.onplaying = () => {
         videoTrackingActive = true;
         dom.recordButton.disabled = false;
-        if (onMediaReadyCallback) onMediaReadyCallback(); // Dispara predictWebcam
+        if (onMediaReadyCallback) onMediaReadyCallback();
     };
+    
+    dom.video.play();
 }
