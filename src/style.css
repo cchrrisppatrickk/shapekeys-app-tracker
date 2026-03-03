@@ -442,3 +442,21 @@ video { width: 100%; height: 100%; object-fit: cover; }
   color: var(--color-border);
   margin-bottom: 10px;
 }
+
+/* =========================================
+   PIZARRA DE TRACKING (BODY MODE)
+   ========================================= */
+.tracking-canvas {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background-color: #050505; /* Casi negro profundo */
+  object-fit: contain; /* Mantiene la proporción del cuerpo intacta */
+  z-index: 20; /* Se pone por encima del estado vacío y el 3D */
+  border-radius: var(--radius-std);
+}
+
+/* Modo Espejo (cuando es webcam) */
+.tracking-canvas.mirrored {
+  transform: rotateY(180deg);
+}

@@ -10,6 +10,7 @@ export let currentWorkspace = 'face';
 // Variables de estado internas
 let allDetectedBones = [];
 let uiElements = {};
+let isDetecting = false; // Flag para evitar el bug del multi-clic en auto-detect
 
 // Inicializa el manejador con las referencias del DOM
 export function initUI(elements) {
@@ -17,7 +18,7 @@ export function initUI(elements) {
     attachEventListeners();
 }
 
-// === NUEVO: Actualizar Cronómetro ===
+// === Actualizar Cronómetro ===
 export function updateTimerDisplay(timeString) {
     if (uiElements.timerDisplay) uiElements.timerDisplay.innerText = timeString;
 }
@@ -29,7 +30,7 @@ export function setTimerActive(isActive) {
     }
 }
 
-// === NUEVO: Renderizar Lista de Clips ===
+// === Renderizar Lista de Clips ===
 export function renderClipsList(takes, activeId) {
     const listContainer = uiElements.clipsList;
     if (!listContainer) return;
@@ -39,7 +40,7 @@ export function renderClipsList(takes, activeId) {
     
     // Habilitar/Deshabilitar botón de exportar
     if (uiElements.exportButton) {
-        uiElements.exportButton.disabled = takes.length === 0 || !activeId;
+        uiElements.exportButton.disabled = (takes.length === 0 || !activeId);
     }
 
     // Limpiar lista
@@ -57,7 +58,7 @@ export function renderClipsList(takes, activeId) {
         
         // Al hacer click en la fila, seleccionamos la toma
         li.onclick = (e) => {
-            if (e.target.closest('button')) return; // Evitar conflicto con botones
+            if (e.target.closest('button')) return; // Evitar conflicto con los botones hijos
             setActiveTake(take.id);
             renderClipsList(takes, take.id); 
         };
@@ -77,7 +78,7 @@ export function renderClipsList(takes, activeId) {
             </div>
         `;
 
-        // Eventos de botones
+        // Eventos de botones (Deteniendo la propagación para no accionar el onclick del li)
         const btnPlay = li.querySelector('.play');
         const btnDelete = li.querySelector('.delete');
 
@@ -88,7 +89,7 @@ export function renderClipsList(takes, activeId) {
         
         btnDelete.onclick = (e) => {
             e.stopPropagation();
-            if(confirm('¿Borrar esta toma?')) {
+            if(confirm('¿Seguro que deseas borrar esta toma?')) {
                 deleteTake(take.id);
             }
         };
@@ -112,11 +113,13 @@ function renderOptions(selectElement, bones) {
     const currentVal = selectElement.value;
     selectElement.innerHTML = '<option value="">-- Selecciona --</option>';
     bones.forEach(bone => selectElement.add(new Option(bone, bone)));
+    // Mantiene la selección si sigue siendo válida tras un filtrado
     if (currentVal && bones.includes(currentVal)) selectElement.value = currentVal;
 }
 
 // Filtrar huesos basado en el término de búsqueda
 function filterBones(searchInput, selectElement) {
+    if (!searchInput || !selectElement) return;
     const term = searchInput.value.toLowerCase();
     const filtered = allDetectedBones.filter(bone => bone.toLowerCase().includes(term));
     renderOptions(selectElement, filtered);
@@ -143,7 +146,7 @@ function findBestMatch(availableBones, regexList) {
     return null;
 }
 
-// Adjuntar todos los listeners de eventos
+// Adjuntar todos los listeners de eventos de la configuración 3D
 function attachEventListeners() {
     if (uiElements.headSearchInput) {
         uiElements.headSearchInput.addEventListener('input', () => filterBones(uiElements.headSearchInput, uiElements.headSelect));
@@ -159,24 +162,34 @@ function attachEventListeners() {
     }
     if (uiElements.autoDetectBtn) {
         uiElements.autoDetectBtn.addEventListener('click', () => {
+            if (isDetecting) return; // Evita clics múltiples concurrentes
+
             if (allDetectedBones.length === 0) {
-                alert("¡Primero carga un modelo!");
+                alert("¡Primero carga un modelo 3D!");
                 return;
             }
+            
             const foundHead = findBestMatch(allDetectedBones, RIG_PATTERNS.head);
             if (foundHead && uiElements.headSelect) {
                 uiElements.headSelect.value = foundHead;
                 highlightBoneInUI(foundHead);
             }
+            
             const foundNeck = findBestMatch(allDetectedBones, RIG_PATTERNS.neck);
             if (foundNeck && uiElements.neckSelect) {
                 uiElements.neckSelect.value = foundNeck;
                 highlightBoneInUI(foundNeck);
             }
+            
             if (foundHead || foundNeck) {
+                isDetecting = true;
                 const originalText = uiElements.autoDetectBtn.innerHTML;
                 uiElements.autoDetectBtn.innerHTML = `<span class="mdc-button__label">¡ENCONTRADO! ✅</span>`;
-                setTimeout(() => uiElements.autoDetectBtn.innerHTML = originalText, 2000);
+                
+                setTimeout(() => {
+                    uiElements.autoDetectBtn.innerHTML = originalText;
+                    isDetecting = false; // Liberamos el botón
+                }, 2000);
             } else {
                 alert("No se detectaron nombres estándar. Selecciona manualmente.");
             }
@@ -189,46 +202,48 @@ export function drawBlendShapes(categories) {
     if (!uiElements.videoBlendShapes || !categories) return;
     let html = "";
     categories.forEach(s => {
-        html += `<li class="blend-shapes-item"><span class="blend-shapes-label">${s.categoryName}</span><span class="blend-shapes-value" style="width:${Math.min(s.score * 100, 100)}px"></span></li>`;
+        html += `<li class="blend-shapes-item">
+                    <span class="blend-shapes-label">${s.categoryName}</span>
+                    <span class="blend-shapes-value" style="width:${Math.min(s.score * 100, 100)}px"></span>
+                 </li>`;
     });
     uiElements.videoBlendShapes.innerHTML = html;
 }
 
-// === NUEVO: Gestor de Espacios de Trabajo (Navegación Lateral) ===
+// === Gestor de Espacios de Trabajo (Navegación Lateral) ===
 export function initWorkspaceSwitcher() {
     const navButtons = document.querySelectorAll('.nav-btn[data-workspace]');
-    const blendshapesPanel = document.getElementById('blendshapes-panel');
     
-    const emptyStateTitle = document.querySelector('.empty-workspace h2');
-    const emptyStateDesc = document.querySelector('.empty-workspace p');
-    const openSetupBtn = document.getElementById('open-setup-btn'); // NUEVO: Referencia al botón
+    // Obtenemos los elementos del DOM localmente pero con verificaciones seguras
+    const blendshapesPanel = document.getElementById('blendshapes-panel');
+    const emptyStateContainer = document.getElementById('empty-workspace-state');
+    const trackingPreviewCanvas = document.getElementById('tracking-preview-canvas');
+
+    if (navButtons.length === 0) return;
 
     navButtons.forEach(btn => {
         btn.addEventListener('click', (e) => {
+            // Remover clase activa de todos y asignarla al clickeado
             navButtons.forEach(b => b.classList.remove('active'));
-            
             const targetBtn = e.currentTarget;
             targetBtn.classList.add('active');
 
+            // Actualizar el estado global
             currentWorkspace = targetBtn.dataset.workspace;
 
             if (currentWorkspace === 'body') {
                 console.log("🚀 Cambiando a entorno: Body Tracking");
                 if (blendshapesPanel) blendshapesPanel.classList.add('hidden');
                 
-                // NUEVO: Adaptación para solo tracking
-                if (emptyStateTitle) emptyStateTitle.innerText = "Motor de Captura Corporal";
-                if (emptyStateDesc) emptyStateDesc.innerText = "Enciende tu webcam o carga un video en el panel derecho para iniciar el tracking esquelético en 2D.";
-                if (openSetupBtn) openSetupBtn.style.display = 'none'; // Ocultamos el botón 3D
+                if (emptyStateContainer) emptyStateContainer.classList.add('hidden');
+                if (trackingPreviewCanvas) trackingPreviewCanvas.classList.remove('hidden');
 
             } else if (currentWorkspace === 'face') {
                 console.log("🎭 Cambiando a entorno: Face Tracking");
                 if (blendshapesPanel) blendshapesPanel.classList.remove('hidden');
                 
-                // Restauramos estado para 3D
-                if (emptyStateTitle) emptyStateTitle.innerText = "Face Tracking Workspace";
-                if (emptyStateDesc) emptyStateDesc.innerText = "Importa un modelo 3D (.glb) con rig facial y blendshapes para empezar a trackear.";
-                if (openSetupBtn) openSetupBtn.style.display = 'inline-flex'; // Mostramos el botón 3D
+                if (emptyStateContainer) emptyStateContainer.classList.remove('hidden');
+                if (trackingPreviewCanvas) trackingPreviewCanvas.classList.add('hidden');
             }
         });
     });

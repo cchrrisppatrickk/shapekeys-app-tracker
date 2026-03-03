@@ -105,14 +105,16 @@
         
         <div id="empty-workspace-state" class="empty-workspace">
           <i class="material-icons empty-icon">view_in_ar</i>
-          <h2>Espacio de Trabajo Vacío</h2>
-          <p>Importa un modelo 3D (.glb) con rig facial para empezar a trackear.</p>
+          <h2>Face Tracking Workspace</h2>
+          <p>Importa un modelo 3D (.glb) con rig facial y blendshapes para empezar a trackear.</p>
           <button id="open-setup-btn" class="mdc-button mdc-button--raised accent-btn" style="margin-top: 20px;">
             <span class="mdc-button__ripple"></span>
             <i class="material-icons mdc-button__icon">add_box</i>
             <span class="mdc-button__label">IMPORTAR MODELO 3D</span>
           </button>
         </div>
+
+        <canvas id="tracking-preview-canvas" class="hidden tracking-canvas"></canvas>
 
       </div>
 

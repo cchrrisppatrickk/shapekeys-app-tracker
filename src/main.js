@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-// Importamos PoseLandmarker además de FaceLandmarker
+// Importamos los Landmarkers de MediaPipe
 import { FaceLandmarker, PoseLandmarker, HandLandmarker, FilesetResolver, DrawingUtils } from "@mediapipe/tasks-vision";
 
 // Importar módulos de lógica
@@ -54,22 +54,27 @@ const dom = {
 
     openSetupBtn: document.getElementById('open-setup-btn'),
     emptyWorkspaceState: document.getElementById('empty-workspace-state'),
+    previewCanvas: document.getElementById("tracking-preview-canvas"),
 };
 
 // ==========================================
 // 2. VARIABLES GLOBALES
 // ==========================================
-// Variables globales
 let faceLandmarker;
 let poseLandmarker;
-let handLandmarker; // NUEVO
+let handLandmarker;
 let lastVideoTime = -1;
 let faceResults = undefined;
-let poseResults = undefined; // NUEVO
-let handResults = undefined; // NUEVO
+let poseResults = undefined;
+let handResults = undefined;
 
+// Contextos 2D para Dibujo (Ambos canvas definidos aquí)
 const canvasCtx = dom.canvasElement.getContext("2d");
 const drawingUtils = new DrawingUtils(canvasCtx);
+
+const previewCtx = dom.previewCanvas.getContext("2d");
+const previewDrawingUtils = new DrawingUtils(previewCtx);
+
 let scene, camera, renderer, controls, stats;
 
 // ==========================================
@@ -78,25 +83,10 @@ let scene, camera, renderer, controls, stats;
 async function init() {
     await createFaceLandmarker();
     await createPoseLandmarker();
-    await createHandLandmarker(); // NUEVO: Cargar IA de manos
+    await createHandLandmarker();
     initThreeJS();
     initUIHandlers();
     initEventListeners();
-}
-
-// NUEVA FUNCIÓN para cargar el modelo del cuerpo
-async function createPoseLandmarker() {
-    const filesetResolver = await FilesetResolver.forVisionTasks(
-        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
-    );
-    poseLandmarker = await PoseLandmarker.createFromOptions(filesetResolver, {
-        baseOptions: {
-            modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
-            delegate: "GPU"
-        },
-        runningMode: "VIDEO",
-        numPoses: 1
-    });
 }
 
 async function createFaceLandmarker() {
@@ -115,25 +105,37 @@ async function createFaceLandmarker() {
     });
 }
 
-// NUEVA FUNCIÓN: Inicializar detector de manos
+async function createPoseLandmarker() {
+    const filesetResolver = await FilesetResolver.forVisionTasks(
+        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
+    );
+    poseLandmarker = await PoseLandmarker.createFromOptions(filesetResolver, {
+        baseOptions: {
+            modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
+            delegate: "GPU"
+        },
+        runningMode: "VIDEO",
+        numPoses: 1
+    });
+}
+
 async function createHandLandmarker() {
     const filesetResolver = await FilesetResolver.forVisionTasks(
         "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
     );
     handLandmarker = await HandLandmarker.createFromOptions(filesetResolver, {
         baseOptions: {
-            // Usamos el modelo estándar para mayor precisión
             modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
             delegate: "GPU"
         },
         runningMode: "VIDEO",
-        numHands: 2 // Importante: detectar ambas manos
+        numHands: 2
     });
 }
 
 function initThreeJS() {
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0d1117); // Ajustado al color dominante del dashboard
+    scene.background = new THREE.Color(0x0d1117);
 
     const width = dom.previewContainer.clientWidth;
     const height = dom.previewContainer.clientHeight;
@@ -199,7 +201,6 @@ function onWindowResize() {
 function initUIHandlers() {
     UI.initUI(dom);
     
-    // INICIALIZAMOS EL GESTOR MULTIMEDIA
     MediaManager.initMediaManager(dom, predictWebcam);
 
     Recorder.initRecorderUI({
@@ -216,12 +217,10 @@ function initUIHandlers() {
         onTakesUpdated: (takes, activeId) => UI.renderClipsList(takes, activeId)
     });
 
-    // NUEVO: Inicializamos la navegación lateral
     UI.initWorkspaceSwitcher();
 }
 
 function initEventListeners() {
-    // Abrir modal al hacer clic en "Importar Modelo 3D"
     if (dom.openSetupBtn) {
         dom.openSetupBtn.addEventListener('click', () => {
             dom.setupModal.style.display = 'flex';
@@ -295,7 +294,6 @@ function confirmMapping() {
     Avatar.setBones(headBone, neckBone);
     if (!headBone) alert("Advertencia: No has seleccionado hueso de cabeza.");
 
-    // Ocultar el mensaje de "Espacio vacío"
     if (dom.emptyWorkspaceState) {
         dom.emptyWorkspaceState.style.display = 'none';
     }
@@ -327,26 +325,27 @@ async function predictWebcam() {
     if (UI.currentWorkspace === 'face') {
         if (lastVideoTime !== dom.video.currentTime) {
             lastVideoTime = dom.video.currentTime;
-            results = faceLandmarker.detectForVideo(dom.video, startTimeMs);
+            faceResults = faceLandmarker.detectForVideo(dom.video, startTimeMs); // CORREGIDO: faceResults
         }
 
-        if (results && results.faceLandmarks) {
-            for (const landmarks of results.faceLandmarks) {
+        if (faceResults && faceResults.faceLandmarks) {
+            for (const landmarks of faceResults.faceLandmarks) {
                 drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_TESSELATION, { color: "#C0C0C040", lineWidth: 1 });
             }
         }
 
-        // Lógica de Modelo 3D y Grabación para Cara...
-        if (!Recorder.isPlaying && results) {
-            const hasBlendshapes = results.faceBlendshapes && results.faceBlendshapes.length > 0;
-            const hasMatrices = results.facialTransformationMatrixes && results.facialTransformationMatrixes.length > 0;
+        if (!Recorder.isPlaying && faceResults) {
+            const hasBlendshapes = faceResults.faceBlendshapes && faceResults.faceBlendshapes.length > 0;
+            const hasMatrices = faceResults.facialTransformationMatrixes && faceResults.facialTransformationMatrixes.length > 0;
 
             if (hasBlendshapes) {
-                Avatar.updateModelMorphs(results.faceBlendshapes[0].categories);
-                UI.drawBlendShapes(results.faceBlendshapes[0].categories);
+                Avatar.updateModelMorphs(faceResults.faceBlendshapes[0].categories);
+                UI.drawBlendShapes(faceResults.faceBlendshapes[0].categories);
             }
-            if (hasMatrices) Avatar.applyHeadPoseToModel(results.facialTransformationMatrixes[0].data);
-            if (Recorder.isRecording && hasBlendshapes && hasMatrices) Recorder.captureFrame(results);
+            if (hasMatrices) Avatar.applyHeadPoseToModel(faceResults.facialTransformationMatrixes[0].data);
+            
+            // CORREGIDO: Se envía faceResults a Recorder
+            if (Recorder.isRecording && hasBlendshapes && hasMatrices) Recorder.captureFrame(faceResults);
         }
     } 
     // ==========================================
@@ -354,32 +353,30 @@ async function predictWebcam() {
     // ==========================================
     else if (UI.currentWorkspace === 'body') {
         
-        // Detectar solo si el frame del video ha cambiado
+        dom.previewCanvas.width = dom.video.videoWidth;
+        dom.previewCanvas.height = dom.video.videoHeight;
+        
+        previewCtx.clearRect(0, 0, dom.previewCanvas.width, dom.previewCanvas.height);
+
         if (lastVideoTime !== dom.video.currentTime) {
             poseResults = poseLandmarker.detectForVideo(dom.video, startTimeMs);
             handResults = handLandmarker.detectForVideo(dom.video, startTimeMs);
-            lastVideoTime = dom.video.currentTime; // Actualizamos el tiempo AL FINAL
+            lastVideoTime = dom.video.currentTime;
         }
 
-        // 1. Dibujar el Cuerpo
         if (poseResults && poseResults.landmarks) {
             for (const landmark of poseResults.landmarks) {
-                // Puntos rojos, huesos azules
-                drawingUtils.drawLandmarks(landmark, { radius: 3, color: "#f85149" });
-                drawingUtils.drawConnectors(landmark, PoseLandmarker.POSE_CONNECTIONS, { color: "#2f81f7", lineWidth: 2 });
+                previewDrawingUtils.drawLandmarks(landmark, { radius: 4, color: "#f85149" });
+                previewDrawingUtils.drawConnectors(landmark, PoseLandmarker.POSE_CONNECTIONS, { color: "#2f81f7", lineWidth: 3 });
             }
         }
 
-        // 2. Dibujar las Manos
         if (handResults && handResults.landmarks) {
             for (const landmarks of handResults.landmarks) {
-                // Huesos dorados, puntos blancos para destacar los dedos
-                drawingUtils.drawConnectors(landmarks, HandLandmarker.HAND_CONNECTIONS, { color: "#e3b341", lineWidth: 2 });
-                drawingUtils.drawLandmarks(landmarks, { color: "#ffffff", lineWidth: 1, radius: 2 });
+                previewDrawingUtils.drawConnectors(landmarks, HandLandmarker.HAND_CONNECTIONS, { color: "#e3b341", lineWidth: 2 });
+                previewDrawingUtils.drawLandmarks(landmarks, { color: "#ffffff", lineWidth: 1, radius: 2 });
             }
         }
-        
-        // La lógica de grabación del cuerpo la añadiremos en la siguiente fase
     }
 
     if (MediaManager.webcamRunning || MediaManager.videoTrackingActive) {
