@@ -327,7 +327,7 @@ async function predictWebcam() {
     if (dom.video.currentTime < lastVideoTime) {
         lastVideoTime = -1;
     }
-    
+
     dom.canvasElement.style.width = dom.video.clientWidth + "px";
     dom.canvasElement.style.height = dom.video.clientHeight + "px";
     dom.canvasElement.width = dom.video.videoWidth;
@@ -342,28 +342,34 @@ async function predictWebcam() {
     if (UI.currentWorkspace === 'face') {
         if (lastVideoTime !== dom.video.currentTime) {
             lastVideoTime = dom.video.currentTime;
-            results = faceLandmarker.detectForVideo(dom.video, startTimeMs);
+            // CORRECCIÓN 1: Usar la variable correcta
+            faceResults = faceLandmarker.detectForVideo(dom.video, startTimeMs); 
         }
 
-        if (results && results.faceLandmarks) {
-            for (const landmarks of results.faceLandmarks) {
+        // CORRECCIÓN 2: Validar usando faceResults
+        if (faceResults && faceResults.faceLandmarks) {
+            for (const landmarks of faceResults.faceLandmarks) {
                 drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_TESSELATION, { color: "#C0C0C040", lineWidth: 1 });
             }
         }
 
         // Lógica de Modelo 3D y Grabación para Cara...
-        if (!Recorder.isPlaying && results) {
-            const hasBlendshapes = results.faceBlendshapes && results.faceBlendshapes.length > 0;
-            const hasMatrices = results.facialTransformationMatrixes && results.facialTransformationMatrixes.length > 0;
+        if (!Recorder.isPlaying && faceResults) {
+            const hasBlendshapes = faceResults.faceBlendshapes && faceResults.faceBlendshapes.length > 0;
+            const hasMatrices = faceResults.facialTransformationMatrixes && faceResults.facialTransformationMatrixes.length > 0;
 
             if (hasBlendshapes) {
-                Avatar.updateModelMorphs(results.faceBlendshapes[0].categories);
-                UI.drawBlendShapes(results.faceBlendshapes[0].categories);
+                Avatar.updateModelMorphs(faceResults.faceBlendshapes[0].categories);
+                UI.drawBlendShapes(faceResults.faceBlendshapes[0].categories);
             }
-            if (hasMatrices) Avatar.applyHeadPoseToModel(results.facialTransformationMatrixes[0].data);
-            if (Recorder.isRecording && hasBlendshapes && hasMatrices) Recorder.captureFrame(results);
+            if (hasMatrices) Avatar.applyHeadPoseToModel(faceResults.facialTransformationMatrixes[0].data);
+            
+            // CORRECCIÓN 3: Pasar faceResults a la grabadora
+            if (Recorder.isRecording && hasBlendshapes && hasMatrices) {
+                Recorder.captureFrame(faceResults); 
+            }
         }
-    } 
+    }
     // ==========================================
     // MODO: BODY TRACKING (Cuerpo + Manos)
     // ==========================================
