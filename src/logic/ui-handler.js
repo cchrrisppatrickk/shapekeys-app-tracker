@@ -4,6 +4,9 @@
 import { RIG_PATTERNS } from './constants.js';
 import { deleteTake, togglePlayback, setActiveTake } from './recorder.js';
 
+// Variable exportada para que main.js sepa qué IA ejecutar
+export let currentWorkspace = 'face';
+
 // Variables de estado internas
 let allDetectedBones = [];
 let uiElements = {};
@@ -196,44 +199,36 @@ export function initWorkspaceSwitcher() {
     const navButtons = document.querySelectorAll('.nav-btn[data-workspace]');
     const blendshapesPanel = document.getElementById('blendshapes-panel');
     
-    // Referencias para cambiar el texto del estado vacío
     const emptyStateTitle = document.querySelector('.empty-workspace h2');
     const emptyStateDesc = document.querySelector('.empty-workspace p');
+    const openSetupBtn = document.getElementById('open-setup-btn'); // NUEVO: Referencia al botón
 
     navButtons.forEach(btn => {
         btn.addEventListener('click', (e) => {
-            // 1. Quitar la clase 'active' de todos los botones
             navButtons.forEach(b => b.classList.remove('active'));
             
-            // 2. Añadir 'active' al botón clicado
             const targetBtn = e.currentTarget;
             targetBtn.classList.add('active');
 
-            // 3. Obtener el entorno seleccionado (face o body)
-            const workspace = targetBtn.dataset.workspace;
+            currentWorkspace = targetBtn.dataset.workspace;
 
-            // 4. Lógica de adaptación de la UI
-            if (workspace === 'body') {
+            if (currentWorkspace === 'body') {
                 console.log("🚀 Cambiando a entorno: Body Tracking");
-                
-                // Ocultamos las blendshapes
                 if (blendshapesPanel) blendshapesPanel.classList.add('hidden');
                 
-                // Adaptamos el texto para que el usuario sepa qué rig importar
-                if (emptyStateTitle) emptyStateTitle.innerText = "Body Tracking Workspace";
-                if (emptyStateDesc) emptyStateDesc.innerText = "Importa un modelo 3D (.glb) con rig humanoide completo para empezar.";
-                
-                // (Próximamente aquí detendremos MediaPipe Face y arrancaremos MediaPipe Pose)
+                // NUEVO: Adaptación para solo tracking
+                if (emptyStateTitle) emptyStateTitle.innerText = "Motor de Captura Corporal";
+                if (emptyStateDesc) emptyStateDesc.innerText = "Enciende tu webcam o carga un video en el panel derecho para iniciar el tracking esquelético en 2D.";
+                if (openSetupBtn) openSetupBtn.style.display = 'none'; // Ocultamos el botón 3D
 
-            } else if (workspace === 'face') {
+            } else if (currentWorkspace === 'face') {
                 console.log("🎭 Cambiando a entorno: Face Tracking");
-                
-                // Mostramos las blendshapes
                 if (blendshapesPanel) blendshapesPanel.classList.remove('hidden');
                 
-                // Restauramos el texto
+                // Restauramos estado para 3D
                 if (emptyStateTitle) emptyStateTitle.innerText = "Face Tracking Workspace";
-                if (emptyStateDesc) emptyStateDesc.innerText = "Importa un modelo 3D (.glb) con rig facial y blendshapes para empezar.";
+                if (emptyStateDesc) emptyStateDesc.innerText = "Importa un modelo 3D (.glb) con rig facial y blendshapes para empezar a trackear.";
+                if (openSetupBtn) openSetupBtn.style.display = 'inline-flex'; // Mostramos el botón 3D
             }
         });
     });

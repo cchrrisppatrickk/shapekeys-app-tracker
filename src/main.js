@@ -5,7 +5,9 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { FaceLandmarker, FilesetResolver, DrawingUtils } from "@mediapipe/tasks-vision";
+
+// Importamos PoseLandmarker además de FaceLandmarker
+import { FaceLandmarker, PoseLandmarker, FilesetResolver, DrawingUtils } from "@mediapipe/tasks-vision";
 
 // Importar módulos de lógica
 import { LIGHT_CONFIG } from './logic/constants.js';
@@ -58,6 +60,7 @@ const dom = {
 // 2. VARIABLES GLOBALES
 // ==========================================
 let faceLandmarker;
+let poseLandmarker; // NUEVO
 let lastVideoTime = -1;
 let results = undefined;
 
@@ -70,9 +73,25 @@ let scene, camera, renderer, controls, stats;
 // ==========================================
 async function init() {
     await createFaceLandmarker();
+    await createPoseLandmarker(); // NUEVO
     initThreeJS();
     initUIHandlers();
     initEventListeners();
+}
+
+// NUEVA FUNCIÓN para cargar el modelo del cuerpo
+async function createPoseLandmarker() {
+    const filesetResolver = await FilesetResolver.forVisionTasks(
+        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
+    );
+    poseLandmarker = await PoseLandmarker.createFromOptions(filesetResolver, {
+        baseOptions: {
+            modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
+            delegate: "GPU"
+        },
+        runningMode: "VIDEO",
+        numPoses: 1
+    });
 }
 
 async function createFaceLandmarker() {
@@ -279,33 +298,54 @@ async function predictWebcam() {
     dom.canvasElement.height = dom.video.videoHeight;
 
     let startTimeMs = performance.now();
-    if (lastVideoTime !== dom.video.currentTime) {
-        lastVideoTime = dom.video.currentTime;
-        results = faceLandmarker.detectForVideo(dom.video, startTimeMs);
-    }
-
     canvasCtx.clearRect(0, 0, dom.canvasElement.width, dom.canvasElement.height);
-    if (results && results.faceLandmarks) {
-        for (const landmarks of results.faceLandmarks) {
-            drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_TESSELATION, { color: "#C0C0C040", lineWidth: 1 });
-        }
-    }
 
-    if (!Recorder.isPlaying && results) {
-        const hasBlendshapes = results.faceBlendshapes && results.faceBlendshapes.length > 0;
-        const hasMatrices = results.facialTransformationMatrixes && results.facialTransformationMatrixes.length > 0;
+    // ==========================================
+    // MODO: FACE TRACKING
+    // ==========================================
+    if (UI.currentWorkspace === 'face') {
+        if (lastVideoTime !== dom.video.currentTime) {
+            lastVideoTime = dom.video.currentTime;
+            results = faceLandmarker.detectForVideo(dom.video, startTimeMs);
+        }
 
-        if (hasBlendshapes) {
-            const categories = results.faceBlendshapes[0].categories;
-            Avatar.updateModelMorphs(categories);
-            UI.drawBlendShapes(categories);
+        if (results && results.faceLandmarks) {
+            for (const landmarks of results.faceLandmarks) {
+                drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_TESSELATION, { color: "#C0C0C040", lineWidth: 1 });
+            }
         }
-        if (hasMatrices) {
-            Avatar.applyHeadPoseToModel(results.facialTransformationMatrixes[0].data);
+
+        // Lógica de Modelo 3D y Grabación para Cara...
+        if (!Recorder.isPlaying && results) {
+            const hasBlendshapes = results.faceBlendshapes && results.faceBlendshapes.length > 0;
+            const hasMatrices = results.facialTransformationMatrixes && results.facialTransformationMatrixes.length > 0;
+
+            if (hasBlendshapes) {
+                Avatar.updateModelMorphs(results.faceBlendshapes[0].categories);
+                UI.drawBlendShapes(results.faceBlendshapes[0].categories);
+            }
+            if (hasMatrices) Avatar.applyHeadPoseToModel(results.facialTransformationMatrixes[0].data);
+            if (Recorder.isRecording && hasBlendshapes && hasMatrices) Recorder.captureFrame(results);
         }
-        if (Recorder.isRecording && hasBlendshapes && hasMatrices) {
-            Recorder.captureFrame(results);
+    } 
+    // ==========================================
+    // MODO: BODY TRACKING
+    // ==========================================
+    else if (UI.currentWorkspace === 'body') {
+        if (lastVideoTime !== dom.video.currentTime) {
+            lastVideoTime = dom.video.currentTime;
+            results = poseLandmarker.detectForVideo(dom.video, startTimeMs);
         }
+
+        if (results && results.landmarks) {
+            for (const landmark of results.landmarks) {
+                // Dibujamos las articulaciones (puntos) y los huesos (conectores)
+                drawingUtils.drawLandmarks(landmark, { radius: 3, color: "#f85149" }); // Rojo
+                drawingUtils.drawConnectors(landmark, PoseLandmarker.POSE_CONNECTIONS, { color: "#2f81f7", lineWidth: 2 }); // Azul técnico
+            }
+        }
+        
+        // La lógica de grabación del cuerpo la añadiremos en la siguiente fase
     }
 
     if (MediaManager.webcamRunning || MediaManager.videoTrackingActive) {
