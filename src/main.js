@@ -7,7 +7,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 // Importamos PoseLandmarker además de FaceLandmarker
-import { FaceLandmarker, PoseLandmarker, FilesetResolver, DrawingUtils } from "@mediapipe/tasks-vision";
+import { FaceLandmarker, PoseLandmarker, HandLandmarker, FilesetResolver, DrawingUtils } from "@mediapipe/tasks-vision";
 
 // Importar módulos de lógica
 import { LIGHT_CONFIG } from './logic/constants.js';
@@ -59,10 +59,14 @@ const dom = {
 // ==========================================
 // 2. VARIABLES GLOBALES
 // ==========================================
+// Variables globales
 let faceLandmarker;
-let poseLandmarker; // NUEVO
+let poseLandmarker;
+let handLandmarker; // NUEVO
 let lastVideoTime = -1;
-let results = undefined;
+let faceResults = undefined;
+let poseResults = undefined; // NUEVO
+let handResults = undefined; // NUEVO
 
 const canvasCtx = dom.canvasElement.getContext("2d");
 const drawingUtils = new DrawingUtils(canvasCtx);
@@ -73,7 +77,8 @@ let scene, camera, renderer, controls, stats;
 // ==========================================
 async function init() {
     await createFaceLandmarker();
-    await createPoseLandmarker(); // NUEVO
+    await createPoseLandmarker();
+    await createHandLandmarker(); // NUEVO: Cargar IA de manos
     initThreeJS();
     initUIHandlers();
     initEventListeners();
@@ -107,6 +112,22 @@ async function createFaceLandmarker() {
         outputFacialTransformationMatrixes: true,
         runningMode: "VIDEO",
         numFaces: 1
+    });
+}
+
+// NUEVA FUNCIÓN: Inicializar detector de manos
+async function createHandLandmarker() {
+    const filesetResolver = await FilesetResolver.forVisionTasks(
+        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
+    );
+    handLandmarker = await HandLandmarker.createFromOptions(filesetResolver, {
+        baseOptions: {
+            // Usamos el modelo estándar para mayor precisión
+            modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
+            delegate: "GPU"
+        },
+        runningMode: "VIDEO",
+        numHands: 2 // Importante: detectar ambas manos
     });
 }
 
@@ -329,19 +350,32 @@ async function predictWebcam() {
         }
     } 
     // ==========================================
-    // MODO: BODY TRACKING
+    // MODO: BODY TRACKING (Cuerpo + Manos)
     // ==========================================
     else if (UI.currentWorkspace === 'body') {
+        
+        // Detectar solo si el frame del video ha cambiado
         if (lastVideoTime !== dom.video.currentTime) {
-            lastVideoTime = dom.video.currentTime;
-            results = poseLandmarker.detectForVideo(dom.video, startTimeMs);
+            poseResults = poseLandmarker.detectForVideo(dom.video, startTimeMs);
+            handResults = handLandmarker.detectForVideo(dom.video, startTimeMs);
+            lastVideoTime = dom.video.currentTime; // Actualizamos el tiempo AL FINAL
         }
 
-        if (results && results.landmarks) {
-            for (const landmark of results.landmarks) {
-                // Dibujamos las articulaciones (puntos) y los huesos (conectores)
-                drawingUtils.drawLandmarks(landmark, { radius: 3, color: "#f85149" }); // Rojo
-                drawingUtils.drawConnectors(landmark, PoseLandmarker.POSE_CONNECTIONS, { color: "#2f81f7", lineWidth: 2 }); // Azul técnico
+        // 1. Dibujar el Cuerpo
+        if (poseResults && poseResults.landmarks) {
+            for (const landmark of poseResults.landmarks) {
+                // Puntos rojos, huesos azules
+                drawingUtils.drawLandmarks(landmark, { radius: 3, color: "#f85149" });
+                drawingUtils.drawConnectors(landmark, PoseLandmarker.POSE_CONNECTIONS, { color: "#2f81f7", lineWidth: 2 });
+            }
+        }
+
+        // 2. Dibujar las Manos
+        if (handResults && handResults.landmarks) {
+            for (const landmarks of handResults.landmarks) {
+                // Huesos dorados, puntos blancos para destacar los dedos
+                drawingUtils.drawConnectors(landmarks, HandLandmarker.HAND_CONNECTIONS, { color: "#e3b341", lineWidth: 2 });
+                drawingUtils.drawLandmarks(landmarks, { color: "#ffffff", lineWidth: 1, radius: 2 });
             }
         }
         
