@@ -217,9 +217,35 @@ function initUIHandlers() {
         },
         onPlayStateChange: (isPlaying) => {
             dom.recordButton.disabled = isPlaying;
+            // Si paramos de reproducir en modo body, limpiamos el canvas
+            if (!isPlaying && UI.currentWorkspace === 'body') {
+                previewCtx.clearRect(0, 0, dom.previewCanvas.width, dom.previewCanvas.height);
+            }
         },
         onTimerUpdate: (timeString) => UI.updateTimerDisplay(timeString),
-        onTakesUpdated: (takes, activeId) => UI.renderClipsList(takes, activeId)
+        onTakesUpdated: (takes, activeId) => UI.renderClipsList(takes, activeId),
+        
+        // NUEVO: Dibujar los frames guardados durante la reproducción
+        onPlaybackFrame: (frame, type) => {
+            if (type === 'body') {
+                previewCtx.clearRect(0, 0, dom.previewCanvas.width, dom.previewCanvas.height);
+                
+                // Dibujamos la pose grabada
+                if (frame.pose) {
+                    for (const landmark of frame.pose) {
+                        previewDrawingUtils.drawLandmarks(landmark, { radius: 4, color: "#f85149" });
+                        previewDrawingUtils.drawConnectors(landmark, PoseLandmarker.POSE_CONNECTIONS, { color: "#2f81f7", lineWidth: 3 });
+                    }
+                }
+                // Dibujamos las manos grabadas
+                if (frame.hands) {
+                    for (const landmarks of frame.hands) {
+                        previewDrawingUtils.drawConnectors(landmarks, HandLandmarker.HAND_CONNECTIONS, { color: "#e3b341", lineWidth: 2 });
+                        previewDrawingUtils.drawLandmarks(landmarks, { color: "#ffffff", lineWidth: 1, radius: 2 });
+                    }
+                }
+            }
+        }
     });
 
     // NUEVO: Inicializamos la navegación lateral
@@ -237,7 +263,14 @@ function initEventListeners() {
     window.addEventListener('dragover', (e) => e.preventDefault());
     window.addEventListener('drop', handleDrop);
 
-    dom.recordButton.addEventListener("click", () => Recorder.isRecording ? Recorder.stopRecording() : Recorder.startRecording());
+    // Le pasamos al grabador en qué pestaña estamos (face o body)
+    dom.recordButton.addEventListener("click", () => {
+        if (Recorder.isRecording) {
+            Recorder.stopRecording();
+        } else {
+            Recorder.startRecording(UI.currentWorkspace);
+        }
+    });
     dom.confirmBtn.addEventListener('click', confirmMapping);
     
     if (dom.exportButton) {
@@ -371,49 +404,51 @@ async function predictWebcam() {
             
             // CORRECCIÓN 3: Pasar faceResults a la grabadora
             if (Recorder.isRecording && hasBlendshapes && hasMatrices) {
-                Recorder.captureFrame(faceResults); 
+                Recorder.captureFaceFrame(faceResults); 
             }
         }
     }
-    // ==========================================
-    // MODO: BODY TRACKING (Cuerpo + Manos)
-    // ==========================================
+    
    // ==========================================
     // MODO: BODY TRACKING (Cuerpo + Manos)
     // ==========================================
     else if (UI.currentWorkspace === 'body') {
         
-        // 1. Ajustar el tamaño del Gran Canvas a la resolución del video
         dom.previewCanvas.width = dom.video.videoWidth;
         dom.previewCanvas.height = dom.video.videoHeight;
         
-        // Limpiamos el frame anterior
-        previewCtx.clearRect(0, 0, dom.previewCanvas.width, dom.previewCanvas.height);
-
         if (lastVideoTime !== dom.video.currentTime) {
             poseResults = poseLandmarker.detectForVideo(dom.video, startTimeMs);
             handResults = handLandmarker.detectForVideo(dom.video, startTimeMs);
             lastVideoTime = dom.video.currentTime;
         }
 
-        // 2. Dibujar el Cuerpo en el Gran Canvas
-        if (poseResults && poseResults.landmarks) {
-            for (const landmark of poseResults.landmarks) {
-                // Usamos 'previewDrawingUtils' para pintar en el lienzo grande
-                previewDrawingUtils.drawLandmarks(landmark, { radius: 4, color: "#f85149" });
-                previewDrawingUtils.drawConnectors(landmark, PoseLandmarker.POSE_CONNECTIONS, { color: "#2f81f7", lineWidth: 3 });
-            }
-        }
+        // IMPORTANTE: Solo dibujamos en vivo y grabamos si NO estamos en Playback
+        if (!Recorder.isPlaying) {
+            previewCtx.clearRect(0, 0, dom.previewCanvas.width, dom.previewCanvas.height);
 
-        // 3. Dibujar las Manos en el Gran Canvas
-        if (handResults && handResults.landmarks) {
-            for (const landmarks of handResults.landmarks) {
-                previewDrawingUtils.drawConnectors(landmarks, HandLandmarker.HAND_CONNECTIONS, { color: "#e3b341", lineWidth: 2 });
-                previewDrawingUtils.drawLandmarks(landmarks, { color: "#ffffff", lineWidth: 1, radius: 2 });
+            // 1. Dibujar el Cuerpo en vivo
+            if (poseResults && poseResults.landmarks) {
+                for (const landmark of poseResults.landmarks) {
+                    previewDrawingUtils.drawLandmarks(landmark, { radius: 4, color: "#f85149" });
+                    previewDrawingUtils.drawConnectors(landmark, PoseLandmarker.POSE_CONNECTIONS, { color: "#2f81f7", lineWidth: 3 });
+                }
+            }
+
+            // 2. Dibujar las Manos en vivo
+            if (handResults && handResults.landmarks) {
+                for (const landmarks of handResults.landmarks) {
+                    previewDrawingUtils.drawConnectors(landmarks, HandLandmarker.HAND_CONNECTIONS, { color: "#e3b341", lineWidth: 2 });
+                    previewDrawingUtils.drawLandmarks(landmarks, { color: "#ffffff", lineWidth: 1, radius: 2 });
+                }
+            }
+
+            // 3. Enviar datos al Buffer de Grabación
+            if (Recorder.isRecording) {
+                Recorder.captureBodyFrame(poseResults, handResults);
             }
         }
     }
-
     if (MediaManager.webcamRunning || MediaManager.videoTrackingActive) {
         window.requestAnimationFrame(predictWebcam);
     }
