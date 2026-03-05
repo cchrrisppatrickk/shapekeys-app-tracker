@@ -213,19 +213,34 @@ export function drawBlendShapes(categories) {
 }
 
 // === Gestor de Espacios de Trabajo (Navegación Lateral) ===
+// === Gestor de Espacios de Trabajo (Navegación Lateral) ===
 export function initWorkspaceSwitcher() {
     const navButtons = document.querySelectorAll('.nav-btn[data-workspace]');
     
-    // Obtenemos los elementos del DOM localmente pero con verificaciones seguras
+    // Referencias al DOM
     const blendshapesPanel = document.getElementById('blendshapes-panel');
     const emptyStateContainer = document.getElementById('empty-workspace-state');
     const trackingPreviewCanvas = document.getElementById('tracking-preview-canvas');
+    
+    // Textos dinámicos del estado vacío
+    const wsIcon = document.getElementById('workspace-icon');
+    const wsTitle = document.getElementById('workspace-title');
+    const wsDesc = document.getElementById('workspace-desc');
+    const btnFaceSetup = document.getElementById('open-setup-btn');
+    const btnRetargetSetup = document.getElementById('open-retarget-setup-btn');
+
+    // Listener para abrir el nuevo modal de Retargeting
+    if (btnRetargetSetup) {
+        btnRetargetSetup.addEventListener('click', () => {
+            const bodyModal = document.getElementById('body-setup-modal');
+            if (bodyModal) bodyModal.style.display = 'flex';
+        });
+    }
 
     if (navButtons.length === 0) return;
 
     navButtons.forEach(btn => {
         btn.addEventListener('click', (e) => {
-            // Evitar hacer cosas si ya estamos en esa pestaña
             if (e.currentTarget.dataset.workspace === currentWorkspace) return;
 
             navButtons.forEach(b => b.classList.remove('active'));
@@ -233,23 +248,44 @@ export function initWorkspaceSwitcher() {
             targetBtn.classList.add('active');
 
             currentWorkspace = targetBtn.dataset.workspace;
+            stopAllMedia(); // Detenemos medios al cambiar
 
-            // NUEVO: Detenemos la cámara/video para dar un inicio limpio y ahorrar RAM
-            stopAllMedia();
-
+            // Lógica de cambio de entorno
             if (currentWorkspace === 'body') {
-                console.log("🚀 Cambiando a entorno: Body Tracking");
+                console.log("🚀 Entorno: Body Tracking (Solo Grabación)");
                 if (blendshapesPanel) blendshapesPanel.classList.add('hidden');
                 
+                // En body solo mostramos la cámara 2D, no pedimos modelo 3D
                 if (emptyStateContainer) emptyStateContainer.classList.add('hidden');
                 if (trackingPreviewCanvas) trackingPreviewCanvas.classList.remove('hidden');
 
             } else if (currentWorkspace === 'face') {
-                console.log("🎭 Cambiando a entorno: Face Tracking");
+                console.log("🎭 Entorno: Face Tracking");
                 if (blendshapesPanel) blendshapesPanel.classList.remove('hidden');
-                
-                if (emptyStateContainer) emptyStateContainer.classList.remove('hidden');
                 if (trackingPreviewCanvas) trackingPreviewCanvas.classList.add('hidden');
+                
+                if (emptyStateContainer) {
+                    emptyStateContainer.classList.remove('hidden');
+                    wsIcon.innerText = 'face';
+                    wsTitle.innerText = 'Face Tracking Workspace';
+                    wsDesc.innerText = 'Importa un modelo 3D (.glb) con rig facial y blendshapes para empezar a trackear.';
+                    btnFaceSetup.classList.remove('hidden');
+                    btnRetargetSetup.classList.add('hidden');
+                }
+
+            } else if (currentWorkspace === 'retargeting') {
+                console.log("🏃‍♂️ Entorno: 3D Retargeting");
+                if (blendshapesPanel) blendshapesPanel.classList.add('hidden');
+                if (trackingPreviewCanvas) trackingPreviewCanvas.classList.add('hidden');
+                
+                if (emptyStateContainer) {
+                    emptyStateContainer.classList.remove('hidden');
+                    wsIcon.innerText = 'directions_run';
+                    wsTitle.innerText = 'Retargeting Workspace';
+                    wsDesc.innerText = 'Importa un modelo de cuerpo completo (.glb) para aplicar las tomas grabadas en "Body".';
+                    btnFaceSetup.classList.add('hidden');
+                    btnRetargetSetup.classList.remove('hidden');
+                }
             }
         });
     });
