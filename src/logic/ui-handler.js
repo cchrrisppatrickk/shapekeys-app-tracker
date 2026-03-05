@@ -1,8 +1,10 @@
 // ==========================================
 // MANEJADOR DE UI (DOM y eventos del modal)
 // ==========================================
+
 import { RIG_PATTERNS } from './constants.js';
 import { deleteTake, togglePlayback, setActiveTake } from './recorder.js';
+import { stopAllMedia } from './media-manager.js'; // NUEVO IMPORT
 
 // Variable exportada para que main.js sepa qué IA ejecutar
 export let currentWorkspace = 'face';
@@ -223,13 +225,17 @@ export function initWorkspaceSwitcher() {
 
     navButtons.forEach(btn => {
         btn.addEventListener('click', (e) => {
-            // Remover clase activa de todos y asignarla al clickeado
+            // Evitar hacer cosas si ya estamos en esa pestaña
+            if (e.currentTarget.dataset.workspace === currentWorkspace) return;
+
             navButtons.forEach(b => b.classList.remove('active'));
             const targetBtn = e.currentTarget;
             targetBtn.classList.add('active');
 
-            // Actualizar el estado global
             currentWorkspace = targetBtn.dataset.workspace;
+
+            // NUEVO: Detenemos la cámara/video para dar un inicio limpio y ahorrar RAM
+            stopAllMedia();
 
             if (currentWorkspace === 'body') {
                 console.log("🚀 Cambiando a entorno: Body Tracking");

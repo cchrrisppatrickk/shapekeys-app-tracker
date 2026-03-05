@@ -181,8 +181,13 @@ function initThreeJS() {
 
 function animate3D() {
     requestAnimationFrame(animate3D);
-    if (controls) controls.update();
-    renderer.render(scene, camera);
+    
+    // NUEVO: Solo renderizar Three.js si estamos en el entorno Face
+    if (UI.currentWorkspace === 'face') {
+        if (controls) controls.update();
+        renderer.render(scene, camera);
+    }
+    
     if (stats) stats.update();
 }
 

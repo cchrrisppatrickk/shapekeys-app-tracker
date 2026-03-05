@@ -140,3 +140,31 @@ function handleVideoFile(file) {
     
     dom.video.play();
 }
+
+export function stopAllMedia() {
+    if (webcamRunning) {
+        webcamRunning = false;
+        dom.enableWebcamButton.classList.remove("accent-btn");
+        if (dom.video.srcObject) {
+            dom.video.srcObject.getTracks().forEach(track => track.stop());
+            dom.video.srcObject = null;
+        }
+    }
+    
+    if (videoTrackingActive) {
+        videoTrackingActive = false;
+        dom.video.pause();
+        dom.video.removeAttribute('src'); 
+        dom.video.load();
+    }
+    
+    dom.recordButton.disabled = true;
+    
+    // Limpiar canvas
+    const ctx = dom.canvasElement.getContext("2d");
+    ctx.clearRect(0, 0, dom.canvasElement.width, dom.canvasElement.height);
+    if (dom.previewCanvas) {
+        const pCtx = dom.previewCanvas.getContext("2d");
+        pCtx.clearRect(0, 0, dom.previewCanvas.width, dom.previewCanvas.height);
+    }
+}
