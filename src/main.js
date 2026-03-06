@@ -5,6 +5,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import * as BodyUI from './logic/body-setup-ui.js'; // NUEVA IMPORTACIÓN
 
 // Importamos PoseLandmarker además de FaceLandmarker
 import { FaceLandmarker, PoseLandmarker, HandLandmarker, FilesetResolver, DrawingUtils } from "@mediapipe/tasks-vision";
@@ -204,6 +205,19 @@ function onWindowResize() {
 
 function initUIHandlers() {
     UI.initUI(dom);
+    UI.initWorkspaceSwitcher();
+    
+    // NUEVO: Inyectar formulario de cuerpo y conectar botón de auto-detección
+    BodyUI.injectBodyForm(); 
+    const autoDetectBodyBtn = document.getElementById('auto-detect-body-btn');
+    if (autoDetectBodyBtn) {
+        autoDetectBodyBtn.addEventListener('click', () => {
+            const matches = BodyUI.autoDetectBodyBones();
+            const originalText = autoDetectBodyBtn.innerHTML;
+            autoDetectBodyBtn.innerHTML = `<span class="mdc-button__label">¡${matches} ENCONTRADOS! ✅</span>`;
+            setTimeout(() => autoDetectBodyBtn.innerHTML = originalText, 2000);
+        });
+    }
     
     // INICIALIZAMOS EL GESTOR MULTIMEDIA
     MediaManager.initMediaManager(dom, predictWebcam);
@@ -301,28 +315,54 @@ function initEventListeners() {
 function handleDrop(e) {
     e.preventDefault();
     const file = e.dataTransfer.files[0];
+    
     if (file && (file.name.toLowerCase().endsWith('.glb') || file.name.toLowerCase().endsWith('.gltf'))) {
-        if (dom.placeholderText) dom.placeholderText.innerText = "Procesando...";
+        console.log(`📁 Archivo 3D detectado: ${file.name}`);
+        
+        // Manejo del texto de carga según el modal abierto
+        const placeholderFace = dom.placeholderText;
+        const placeholderBody = document.getElementById('body-placeholder-text');
+        
+        if (UI.currentWorkspace === 'face' && placeholderFace) placeholderFace.innerText = "Procesando...";
+        if (UI.currentWorkspace === 'retargeting' && placeholderBody) placeholderBody.innerText = "Procesando...";
+
         const fileURL = URL.createObjectURL(file);
         const loader = new GLTFLoader();
 
         loader.load(fileURL, (gltf) => {
+            console.log("🟢 Modelo cargado correctamente en Three.js");
             if (Avatar.avatarModel) scene.remove(Avatar.avatarModel);
             const model = gltf.scene;
             scene.add(model);
             Avatar.setAvatarModel(model);
-            if (dom.placeholderText) dom.placeholderText.style.display = "none";
 
+            // Ocultar placeholders
+            if (placeholderFace) placeholderFace.style.display = "none";
+            if (placeholderBody) placeholderBody.style.display = "none";
+
+            // Extraer todos los huesos
             const detectedBones = [];
-            model.traverse((node) => { if (node.isBone) detectedBones.push(node.name); });
-            UI.populateBoneSelectors(detectedBones);
+            model.traverse((node) => { 
+                if (node.isBone) detectedBones.push(node.name); 
+            });
+
+            // DECISIÓN: ¿A qué formulario enviamos los datos?
+            if (UI.currentWorkspace === 'face') {
+                console.log("🎭 Poblando selectores de rostro...");
+                UI.populateBoneSelectors(detectedBones);
+            } else if (UI.currentWorkspace === 'retargeting') {
+                console.log("🏃‍♂️ Poblando selectores de cuerpo completo...");
+                BodyUI.populateBodyBoneSelectors(detectedBones);
+            }
 
         }, undefined, (error) => {
-            console.error(error);
-            if (dom.placeholderText) dom.placeholderText.innerText = "Error al cargar.";
+            console.error("❌ Error al cargar GLB:", error);
+            if (placeholderFace) placeholderFace.innerText = "Error al cargar.";
+            if (placeholderBody) placeholderBody.innerText = "Error al cargar.";
         });
     }
 }
+
 
 function confirmMapping() {
     if (!Avatar.avatarModel) return alert("Arrastra un modelo .glb primero.");
