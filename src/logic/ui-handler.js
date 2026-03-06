@@ -230,13 +230,27 @@ export function initWorkspaceSwitcher() {
     const btnRetargetSetup = document.getElementById('open-retarget-setup-btn');
 
     // Listener para abrir el nuevo modal de Retargeting
+    // Listener para abrir el nuevo modal de Retargeting
     if (btnRetargetSetup) {
         btnRetargetSetup.addEventListener('click', () => {
             const bodyModal = document.getElementById('body-setup-modal');
+            
+            // NUEVO: Movemos el canvas 3D al lado izquierdo de este modal
+            const previewBodyContainer = document.getElementById('preview-body-three-container');
+            const mainContainer = document.getElementById('three-container');
+            // Buscamos el canvas de Three.js (el que NO tiene la clase tracking-canvas)
+            const threeCanvas = mainContainer.querySelector('canvas:not(.tracking-canvas)');
+            
+            if (threeCanvas && previewBodyContainer) {
+                previewBodyContainer.appendChild(threeCanvas);
+                // Forzamos un reajuste de tamaño
+                window.dispatchEvent(new Event('resize'));
+            }
+
             if (bodyModal) bodyModal.style.display = 'flex';
         });
     }
-
+    
     if (navButtons.length === 0) return;
 
     navButtons.forEach(btn => {

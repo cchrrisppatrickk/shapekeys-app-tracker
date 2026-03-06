@@ -7,6 +7,9 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import * as BodyUI from './logic/body-setup-ui.js'; // NUEVA IMPORTACIÓN
 
+import * as RetargetSolver from './logic/retarget-solver.js';
+import { bodyBones } from './logic/avatar-control.js'; // Asegúrate de exportar bodyBones desde avatar-control.js
+
 // Importamos PoseLandmarker además de FaceLandmarker
 import { FaceLandmarker, PoseLandmarker, HandLandmarker, FilesetResolver, DrawingUtils } from "@mediapipe/tasks-vision";
 
@@ -184,8 +187,8 @@ function initThreeJS() {
 function animate3D() {
     requestAnimationFrame(animate3D);
     
-    // NUEVO: Solo renderizar Three.js si estamos en el entorno Face
-    if (UI.currentWorkspace === 'face') {
+    // CORRECCIÓN: Renderizar Three.js si estamos en Face O en Retargeting
+    if (UI.currentWorkspace === 'face' || UI.currentWorkspace === 'retargeting') {
         if (controls) controls.update();
         renderer.render(scene, camera);
     }
@@ -241,22 +244,30 @@ function initUIHandlers() {
         onTakesUpdated: (takes, activeId) => UI.renderClipsList(takes, activeId),
         
         // NUEVO: Dibujar los frames guardados durante la reproducción
-        onPlaybackFrame: (frame, type) => {
+       onPlaybackFrame: (frame, type) => {
             if (type === 'body') {
-                previewCtx.clearRect(0, 0, dom.previewCanvas.width, dom.previewCanvas.height);
-                
-                // Dibujamos la pose grabada
-                if (frame.pose) {
-                    for (const landmark of frame.pose) {
-                        previewDrawingUtils.drawLandmarks(landmark, { radius: 4, color: "#f85149" });
-                        previewDrawingUtils.drawConnectors(landmark, PoseLandmarker.POSE_CONNECTIONS, { color: "#2f81f7", lineWidth: 3 });
+                // 1. DIBUJAR EN CANVAS (Si estamos en la pestaña Body)
+                if (UI.currentWorkspace === 'body') {
+                    previewCtx.clearRect(0, 0, dom.previewCanvas.width, dom.previewCanvas.height);
+                    if (frame.pose) {
+                        for (const landmark of frame.pose) {
+                            previewDrawingUtils.drawLandmarks(landmark, { radius: 4, color: "#f85149" });
+                            previewDrawingUtils.drawConnectors(landmark, PoseLandmarker.POSE_CONNECTIONS, { color: "#2f81f7", lineWidth: 3 });
+                        }
+                    }
+                    if (frame.hands) {
+                        for (const landmarks of frame.hands) {
+                            previewDrawingUtils.drawConnectors(landmarks, HandLandmarker.HAND_CONNECTIONS, { color: "#e3b341", lineWidth: 2 });
+                            previewDrawingUtils.drawLandmarks(landmarks, { color: "#ffffff", lineWidth: 1, radius: 2 });
+                        }
                     }
                 }
-                // Dibujamos las manos grabadas
-                if (frame.hands) {
-                    for (const landmarks of frame.hands) {
-                        previewDrawingUtils.drawConnectors(landmarks, HandLandmarker.HAND_CONNECTIONS, { color: "#e3b341", lineWidth: 2 });
-                        previewDrawingUtils.drawLandmarks(landmarks, { color: "#ffffff", lineWidth: 1, radius: 2 });
+                
+                // 2. RETARGETING 3D (Si estamos en la pestaña Retargeting y hay modelo)
+                if (UI.currentWorkspace === 'retargeting' && Object.keys(bodyBones).length > 0) {
+                    // Le pasamos los landmarks de la pose y el diccionario de huesos al Solver
+                    if (frame.pose && frame.pose[0]) {
+                        RetargetSolver.solveRetargeting(frame.pose[0], bodyBones);
                     }
                 }
             }
