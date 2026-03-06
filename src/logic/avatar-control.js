@@ -9,6 +9,9 @@ export let avatarModel = null;
 export let headBone = null;
 export let neckBone = null;
 
+// NUEVAS VARIABLES PARA RETARGETING
+export let bodyBones = {}; // Almacenará las referencias reales a THREE.Bone
+
 // Función para actualizar el modelo actual
 export function setAvatarModel(model) {
     avatarModel = model;
@@ -63,4 +66,25 @@ export function resetPose() {
             }
         });
     }
+}
+
+// NUEVA FUNCIÓN: Asignar todo el esqueleto del cuerpo
+export function setBodyBones(boneMap) {
+    bodyBones = {}; // Reiniciar el objeto
+    if (!avatarModel) return;
+
+    Object.keys(boneMap).forEach(key => {
+        const boneName = boneMap[key];
+        if (boneName) {
+            // Buscar el hueso real en la jerarquía de Three.js
+            const bone = avatarModel.getObjectByName(boneName);
+            if (bone) {
+                bodyBones[key] = bone;
+            } else {
+                console.warn(`⚠️ Hueso [${boneName}] no encontrado en el modelo 3D para la clave [${key}].`);
+            }
+        }
+    });
+    
+    console.log("🦴 Esqueleto de Retargeting configurado en memoria:", bodyBones);
 }

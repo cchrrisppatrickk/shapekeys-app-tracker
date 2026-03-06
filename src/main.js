@@ -38,6 +38,7 @@ const dom = {
     previewContainer: document.getElementById('preview-three-container'),
     mainContainer: document.getElementById('three-container'),
     confirmBtn: document.getElementById('confirm-mapping-btn'),
+    confirmBodyBtn: document.getElementById('confirm-body-mapping-btn'), // NUEVO
     placeholderText: document.querySelector('.preview-placeholder'),
     headSelect: document.getElementById('head-bone-select'),
     neckSelect: document.getElementById('neck-bone-select'),
@@ -267,6 +268,14 @@ function initUIHandlers() {
 }
 
 function initEventListeners() {
+
+    dom.confirmBtn.addEventListener('click', confirmMapping);
+
+    // NUEVO EVENTO PARA EL MODAL DE RETARGETING
+    if (dom.confirmBodyBtn) {
+        dom.confirmBodyBtn.addEventListener('click', confirmBodyMapping);
+    }
+
     // Abrir modal al hacer clic en "Importar Modelo 3D"
     if (dom.openSetupBtn) {
         dom.openSetupBtn.addEventListener('click', () => {
@@ -493,6 +502,41 @@ async function predictWebcam() {
         window.requestAnimationFrame(predictWebcam);
     }
 }
+
+// NUEVA FUNCIÓN: Lógica para confirmar el Rig del cuerpo
+function confirmBodyMapping() {
+    if (!Avatar.avatarModel) return alert("Arrastra un modelo .glb primero.");
+    
+    // 1. Obtener los nombres de los huesos desde la UI
+    const boneMap = BodyUI.getSelectedBodyBones();
+    
+    // 2. Advertencia si no hay caderas (la raíz del movimiento)
+    if (!boneMap.hips) {
+        alert("Advertencia: Es altamente recomendable asignar al menos las Caderas (Hips) para que el movimiento funcione.");
+    }
+
+    // 3. Enviar al controlador del Avatar
+    Avatar.setBodyBones(boneMap);
+
+    // 4. Limpiar UI y mostrar el modelo en el workspace principal
+    if (dom.emptyWorkspaceState) {
+        dom.emptyWorkspaceState.classList.add('hidden');
+    }
+
+    dom.mainContainer.appendChild(renderer.domElement);
+    const newWidth = dom.mainContainer.clientWidth;
+    const newHeight = dom.mainContainer.clientHeight;
+    renderer.setSize(newWidth, newHeight);
+    camera.aspect = newWidth / newHeight;
+    camera.updateProjectionMatrix();
+    
+    // Cerrar el modal
+    const bodyModal = document.getElementById('body-setup-modal');
+    if (bodyModal) bodyModal.style.display = 'none';
+    
+    console.log("🚀 ¡Modelo de Retargeting listo en escena!");
+}
+
 
 // ==========================================
 // 5. INICIAR

@@ -109,3 +109,16 @@ export function autoDetectBodyBones() {
     console.log(`🎉 Auto-detección finalizada: ${matchCount}/${Object.keys(BODY_RIG_DICT).length} huesos mapeados.`);
     return matchCount;
 }
+
+
+// 4. Extraer la configuración final del formulario
+export function getSelectedBodyBones() {
+    const selectedBones = {};
+    Object.keys(BODY_RIG_DICT).forEach(boneKey => {
+        const selectElement = document.getElementById(`body-bone-${boneKey}`);
+        if (selectElement && selectElement.value) {
+            selectedBones[boneKey] = selectElement.value;
+        }
+    });
+    return selectedBones;
+}
